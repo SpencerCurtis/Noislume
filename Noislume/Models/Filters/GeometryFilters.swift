@@ -53,20 +53,12 @@ final class PerspectiveCorrectionFilter: ImageFilter {
             return image
         }
         
-        print("\nApplying perspective correction:")
-        print("Original image size: \(correction.originalImageSize)")
-        print("Current image extent: \(image.extent)")
-        
-        // Scale points if image size has changed
         let scaleX = image.extent.width / correction.originalImageSize.width
         let scaleY = image.extent.height / correction.originalImageSize.height
         
         let scaledPoints = correction.points.map { point in
             CGPoint(x: point.x * scaleX, y: point.y * scaleY)
         }
-        
-        print("Original points: \(correction.points)")
-        print("Scaled points: \(scaledPoints)")
         
         let filter = CIFilter.perspectiveCorrection()
         filter.inputImage = image

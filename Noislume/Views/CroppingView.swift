@@ -100,48 +100,32 @@ struct CroppingView: View {
     }
 
     private func convertPointsFromImageToView(_ points: [CGPoint], imageExtent: CGRect, viewFrame: CGRect) -> [CGPoint] {
+        let imageSize = CGSize(width: imageExtent.width, height: imageExtent.height)
         let imageFrame = getImageFrame(imageExtent: imageExtent, viewFrame: viewFrame)
         
-        print("\nConverting IMAGE->VIEW:")
-        print("Image extent: \(imageExtent)")
-        print("View frame: \(viewFrame)")
-        print("Image frame: \(imageFrame)")
-        
         return points.map { point in
-            // Clamp coordinates to image bounds
             let clampedX = min(max(point.x, 0), imageExtent.width)
             let clampedY = min(max(point.y, 0), imageExtent.height)
             
-            // Convert to view space
             let viewX = imageFrame.minX + (clampedX / imageExtent.width) * imageFrame.width
             let viewY = imageFrame.minY + (1 - (clampedY / imageExtent.height)) * imageFrame.height
             
-            let viewPoint = CGPoint(x: viewX, y: viewY)
-            print("Converting \(point) -> \(viewPoint)")
-            return viewPoint
+            return CGPoint(x: viewX, y: viewY)
         }
     }
 
     private func convertPointsFromViewToImage(_ points: [CGPoint], imageExtent: CGRect, viewFrame: CGRect) -> [CGPoint] {
+        let imageSize = CGSize(width: imageExtent.width, height: imageExtent.height)
         let imageFrame = getImageFrame(imageExtent: imageExtent, viewFrame: viewFrame)
         
-        print("\nConverting VIEW->IMAGE:")
-        print("Image extent: \(imageExtent)")
-        print("View frame: \(viewFrame)")
-        print("Image frame: \(imageFrame)")
-        
         return points.map { point in
-            // Clamp view coordinates to image frame
             let clampedX = min(max(point.x, imageFrame.minX), imageFrame.maxX)
             let clampedY = min(max(point.y, imageFrame.minY), imageFrame.maxY)
             
-            // Convert to image space
             let imageX = ((clampedX - imageFrame.minX) / imageFrame.width) * imageExtent.width
             let imageY = (1 - ((clampedY - imageFrame.minY) / imageFrame.height)) * imageExtent.height
             
-            let imagePoint = CGPoint(x: imageX, y: imageY)
-            print("Converting \(point) -> \(imagePoint)")
-            return imagePoint
+            return CGPoint(x: imageX, y: imageY)
         }
     }
 
@@ -286,9 +270,6 @@ struct CroppingView: View {
 
     func applyCrop(in viewSize: CGSize) {
         guard let inputImage = viewModel.imageModel.processedImage else { return }
-        
-        print("\nApplying crop with points:")
-        print("Corner points: \(cornerPoints)")
         
         let imagePoints = convertPointsFromViewToImage(cornerPoints,
                                                      imageExtent: inputImage.extent,

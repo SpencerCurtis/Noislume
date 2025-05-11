@@ -10,30 +10,26 @@ import SwiftUI
 struct CornerHandles: View {
     let geometrySize: CGSize
     @Binding var cornerPoints: [CGPoint]
-
-    var body: some View {
-        ForEach(0..<cornerPoints.count, id: \.self) { index in
-            DraggableCircle(position: Binding(
-                get: { cornerPoints[index] },
-                set: { cornerPoints[index] = $0 }
-            ))
-        }
+    let imageFrame: CGRect
+    
+    private func clampPointToImageFrame(_ point: CGPoint) -> CGPoint {
+        let x = min(max(point.x, imageFrame.minX), imageFrame.maxX)
+        let y = min(max(point.y, imageFrame.minY), imageFrame.maxY)
+        return CGPoint(x: x, y: y)
     }
-}
-
-struct DraggableCircle: View {
-    @Binding var position: CGPoint
-
+    
     var body: some View {
-        Circle()
-            .fill(Color.red)
-            .frame(width: 20, height: 20)
-            .position(position)
-            .gesture(
-                DragGesture(minimumDistance: 0)
-                    .onChanged { gesture in
-                        position = gesture.location
-                    }
-            )
+        ForEach(0..<4) { index in
+            Circle()
+                .frame(width: 20, height: 20)
+                .position(cornerPoints[index])
+                .gesture(
+                    DragGesture(minimumDistance: 0)
+                        .onChanged { value in
+                            let newPosition = clampPointToImageFrame(value.location)
+                            cornerPoints[index] = newPosition
+                        }
+                )
+        }
     }
 }

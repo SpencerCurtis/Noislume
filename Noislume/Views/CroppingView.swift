@@ -129,6 +129,41 @@ struct CroppingView: View {
         }
     }
 
+    private func clampPointToImageFrame(_ point: CGPoint, frame: CGRect) -> CGPoint {
+        let x = min(max(point.x, frame.minX), frame.maxX)
+        let y = min(max(point.y, frame.minY), frame.maxY)
+        return CGPoint(x: x, y: y)
+    }
+
+    private func clampRectangleToImageFrame(points: [CGPoint], translation: CGSize, imageFrame: CGRect) -> CGSize {
+        // Calculate the bounds of the crop rectangle after translation
+        let translatedPoints = points.map { CGPoint(x: $0.x + translation.width, y: $0.y + translation.height) }
+        
+        // Find the extremes of the translated points
+        let minX = translatedPoints.min(by: { $0.x < $1.x })?.x ?? 0
+        let maxX = translatedPoints.max(by: { $0.x < $1.x })?.x ?? 0
+        let minY = translatedPoints.min(by: { $0.y < $1.y })?.y ?? 0
+        let maxY = translatedPoints.max(by: { $0.y < $1.y })?.y ?? 0
+        
+        // Calculate the necessary adjustments
+        var adjustedTranslation = translation
+        
+        if minX < imageFrame.minX {
+            adjustedTranslation.width = translation.width + (imageFrame.minX - minX)
+        }
+        if maxX > imageFrame.maxX {
+            adjustedTranslation.width = translation.width - (maxX - imageFrame.maxX)
+        }
+        if minY < imageFrame.minY {
+            adjustedTranslation.height = translation.height + (imageFrame.minY - minY)
+        }
+        if maxY > imageFrame.maxY {
+            adjustedTranslation.height = translation.height - (maxY - imageFrame.maxY)
+        }
+        
+        return adjustedTranslation
+    }
+
     var body: some View {
         GeometryReader { geo in
             ZStack {
@@ -155,31 +190,46 @@ struct CroppingView: View {
                         .overlay {
                             if showCropOverlay {
                                 ZStack {
+                                    let imageFrame = AVMakeRect(aspectRatio: CGSize(width: image.extent.width, height: image.extent.height),
+                                                              insideRect: CGRect(origin: .zero, size: geo.size))
+                                    
                                     CropOverlay(cornerPoints: cornerPoints)
                                         .offset(cropOffset)
                                         .gesture(
                                             DragGesture(minimumDistance: 0)
                                                 .onChanged { value in
-                                                    let translation = value.translation
-                                                    cropOffset = CGSize(
-                                                        width: lastDragPosition.width + translation.width,
-                                                        height: lastDragPosition.height + translation.height
+                                                    let translation = CGSize(
+                                                        width: lastDragPosition.width + value.translation.width,
+                                                        height: lastDragPosition.height + value.translation.height
+                                                    )
+                                                    cropOffset = clampRectangleToImageFrame(
+                                                        points: cornerPoints,
+                                                        translation: translation,
+                                                        imageFrame: imageFrame
                                                     )
                                                 }
                                                 .onEnded { value in
+                                                    let clampedTranslation = clampRectangleToImageFrame(
+                                                        points: cornerPoints,
+                                                        translation: value.translation,
+                                                        imageFrame: imageFrame
+                                                    )
+                                                    
                                                     lastDragPosition = .zero
                                                     cropOffset = .zero
                                                     
                                                     for i in cornerPoints.indices {
                                                         cornerPoints[i] = CGPoint(
-                                                            x: cornerPoints[i].x + value.translation.width,
-                                                            y: cornerPoints[i].y + value.translation.height
+                                                            x: cornerPoints[i].x + clampedTranslation.width,
+                                                            y: cornerPoints[i].y + clampedTranslation.height
                                                         )
                                                     }
                                                 }
                                         )
                                     
-                                    CornerHandles(geometrySize: geo.size, cornerPoints: $cornerPoints)
+                                    CornerHandles(geometrySize: geo.size,
+                                                cornerPoints: $cornerPoints,
+                                                imageFrame: imageFrame)
                                         .offset(cropOffset)
                                 }
                             }

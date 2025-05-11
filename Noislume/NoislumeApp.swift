@@ -6,9 +6,15 @@
 //
 
 import SwiftUI
+import os.log
 
 @main
 struct NoislumeApp: App {
+    init() {
+        // Verify frameworks on startup
+        FrameworkVerifier.verifyFrameworks()
+    }
+    
     var body: some Scene {
         WindowGroup {
             ContentView()

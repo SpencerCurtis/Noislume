@@ -11,26 +11,18 @@ struct CropOverlay: View {
     let cornerPoints: [CGPoint]
 
     var body: some View {
-        Path { path in
+        Canvas { context, size in
             guard cornerPoints.count == 4 else { return }
+            
+            var path = Path()
             path.move(to: cornerPoints[0])
             path.addLine(to: cornerPoints[1])
             path.addLine(to: cornerPoints[2])
             path.addLine(to: cornerPoints[3])
             path.closeSubpath()
+            
+            // Just draw the stroke, no fill
+            context.stroke(path, with: .color(.red), lineWidth: 2)
         }
-        .stroke(Color.red, lineWidth: 2)
-        .background(
-            Path { path in
-                guard cornerPoints.count == 4 else { return }
-                path.move(to: cornerPoints[0])
-                path.addLine(to: cornerPoints[1])
-                path.addLine(to: cornerPoints[2])
-                path.addLine(to: cornerPoints[3])
-                path.closeSubpath()
-            }
-            .fill(Color.black.opacity(0.3))
-            .blendMode(.multiply)
-        )
     }
 }

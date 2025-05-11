@@ -13,7 +13,10 @@ struct CornerHandles: View {
 
     var body: some View {
         ForEach(0..<cornerPoints.count, id: \.self) { index in
-            DraggableCircle(position: $cornerPoints[index])
+            DraggableCircle(position: Binding(
+                get: { cornerPoints[index] },
+                set: { cornerPoints[index] = $0 }
+            ))
         }
     }
 }
@@ -27,9 +30,9 @@ struct DraggableCircle: View {
             .frame(width: 20, height: 20)
             .position(position)
             .gesture(
-                DragGesture()
+                DragGesture(minimumDistance: 0)
                     .onChanged { gesture in
-                        self.position = gesture.location
+                        position = gesture.location
                     }
             )
     }

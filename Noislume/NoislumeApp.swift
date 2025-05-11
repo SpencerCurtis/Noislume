@@ -15,9 +15,17 @@ struct NoislumeApp: App {
         FrameworkVerifier.verifyFrameworks()
     }
     
+    @StateObject private var settings = AppSettings()
+    
     var body: some Scene {
         WindowGroup {
             ContentView()
+                .environmentObject(settings)
         }
+        #if os(macOS)
+        Settings {
+            SettingsView(settings: settings)
+        }
+        #endif
     }
 }

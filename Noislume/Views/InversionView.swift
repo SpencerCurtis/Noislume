@@ -8,9 +8,10 @@ struct AdjustmentSlider: View {
     let onEditingChanged: () -> Void
     
     var body: some View {
-        VStack(alignment: .leading) {
+        VStack(alignment: .leading, spacing: 4) {
             HStack {
                 Text(title)
+                    .foregroundStyle(.primary)
                 Spacer()
                 Text(String(format: "%.2f", value))
                     .monospacedDigit()
@@ -40,72 +41,78 @@ struct InversionView: View {
     }
     
     var body: some View {
-        HStack(spacing: 20) {
+        HStack(spacing: 0) {
             CroppingView(viewModel: viewModel)
+                .frame(maxWidth: .infinity)
             
-            Spacer()
-            
-            // Controls
-            VStack(spacing: 10) {
-                AdjustmentSlider(
-                    title: "Temperature",
-                    value: $viewModel.imageModel.adjustments.temperature,
-                    range: 2000...20000
-                ) {
-                    Task { await viewModel.processImage() }
-                }
-                
-                AdjustmentSlider(
-                    title: "Tint",
-                    value: $viewModel.imageModel.adjustments.tint,
-                    range: -150...150
-                ) {
-                    Task { await viewModel.processImage() }
-                }
-                
-                AdjustmentSlider(
-                    title: "Exposure",
-                    value: $viewModel.imageModel.adjustments.exposure,
-                    range: -1...1
-                ) {
-                    Task { await viewModel.processImage() }
-                }
-                
-                AdjustmentSlider(
-                    title: "Brightness",
-                    value: $viewModel.imageModel.adjustments.brightness,
-                    range: -1...1
-                ) {
-                    Task { await viewModel.processImage() }
-                }
-                
-                AdjustmentSlider(
-                    title: "Contrast",
-                    value: $viewModel.imageModel.adjustments.contrast,
-                    range: 0.25...4
-                ) {
-                    Task { await viewModel.processImage() }
-                }
-                
-                Button("Black and White?") {
-                    viewModel.imageModel.adjustments.isBlackAndWhite.toggle()
-                    Task { await viewModel.processImage() } 
-                }
-                
-                // Buttons
-                HStack {
-                    Button("Load RAW") {
-                        showFileImporter = true
+            // Controls Sidebar
+            VStack(spacing: 16) {
+                VStack(spacing: 16) {
+                    AdjustmentSlider(
+                        title: "Temperature",
+                        value: $viewModel.imageModel.adjustments.temperature,
+                        range: 2000...20000
+                    ) {
+                        Task { await viewModel.processImage() }
                     }
                     
-                    Button("Export") {
-                        showExporter = true
+                    AdjustmentSlider(
+                        title: "Tint",
+                        value: $viewModel.imageModel.adjustments.tint,
+                        range: -150...150
+                    ) {
+                        Task { await viewModel.processImage() }
                     }
-                    .disabled(viewModel.imageModel.processedImage == nil)
+                    
+                    AdjustmentSlider(
+                        title: "Exposure",
+                        value: $viewModel.imageModel.adjustments.exposure,
+                        range: -1...1
+                    ) {
+                        Task { await viewModel.processImage() }
+                    }
+                    
+                    AdjustmentSlider(
+                        title: "Brightness",
+                        value: $viewModel.imageModel.adjustments.brightness,
+                        range: -1...1
+                    ) {
+                        Task { await viewModel.processImage() }
+                    }
+                    
+                    AdjustmentSlider(
+                        title: "Contrast",
+                        value: $viewModel.imageModel.adjustments.contrast,
+                        range: 0.25...4
+                    ) {
+                        Task { await viewModel.processImage() }
+                    }
+                }
+                .padding(.top, 8)
+
+                Spacer()
+                
+                VStack(spacing: 8) {
+                    Toggle("Black and White?", isOn: $viewModel.imageModel.adjustments.isBlackAndWhite)
+                        .onChange(of: viewModel.imageModel.adjustments.isBlackAndWhite) { _, _ in
+                            Task { await viewModel.processImage() }
+                        }
+                    
+                    HStack(spacing: 8) {
+                        Button("Load RAW") {
+                            showFileImporter = true
+                        }
+                        
+                        Button("Export") {
+                            showExporter = true
+                        }
+                        .disabled(viewModel.imageModel.processedImage == nil)
+                    }
                 }
             }
             .padding()
-            .frame(maxWidth: 400)
+            .frame(width: 300)
+            .background(Color(nsColor: .controlBackgroundColor))
         }
         .fileImporter(
             isPresented: $showFileImporter,

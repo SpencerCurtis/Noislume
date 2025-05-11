@@ -48,17 +48,32 @@ final class PerspectiveCorrectionFilter: ImageFilter {
     let category: FilterCategory = .geometry
     
     func apply(to image: CIImage, with adjustments: ImageAdjustments) -> CIImage {
-        guard let points = adjustments.perspectivePoints,
-              points.count == 4 else {
+        guard let correction = adjustments.perspectiveCorrection,
+              correction.points.count == 4 else {
             return image
         }
         
+        print("\nApplying perspective correction:")
+        print("Original image size: \(correction.originalImageSize)")
+        print("Current image extent: \(image.extent)")
+        
+        // Scale points if image size has changed
+        let scaleX = image.extent.width / correction.originalImageSize.width
+        let scaleY = image.extent.height / correction.originalImageSize.height
+        
+        let scaledPoints = correction.points.map { point in
+            CGPoint(x: point.x * scaleX, y: point.y * scaleY)
+        }
+        
+        print("Original points: \(correction.points)")
+        print("Scaled points: \(scaledPoints)")
+        
         let filter = CIFilter.perspectiveCorrection()
         filter.inputImage = image
-        filter.topLeft = points[0]
-        filter.topRight = points[1]
-        filter.bottomRight = points[2]
-        filter.bottomLeft = points[3]
+        filter.topLeft = scaledPoints[0]
+        filter.topRight = scaledPoints[1]
+        filter.bottomRight = scaledPoints[2]
+        filter.bottomLeft = scaledPoints[3]
         
         return filter.outputImage ?? image
     }

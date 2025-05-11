@@ -64,7 +64,17 @@ struct ImageAdjustments: Codable {
     var unsharpMaskRadius: Float = 2.5
     var unsharpMaskIntensity: Float = 0.5
     
-    var perspectivePoints: [CGPoint]? = nil
+    struct PerspectiveCorrection: Codable {
+        var points: [CGPoint]
+        var originalImageSize: CGSize
+        
+        init(points: [CGPoint], imageSize: CGSize) {
+            self.points = points
+            self.originalImageSize = imageSize
+        }
+    }
+    
+    var perspectiveCorrection: PerspectiveCorrection?
     
     init(exposure: Float = -0.2,      // Slightly darker
          contrast: Float = 1.2,       // More contrast
@@ -98,7 +108,7 @@ struct ImageAdjustments: Codable {
          bluePolynomial: [CGFloat] = [0, 1, 0, 0],
          unsharpMaskRadius: Float = 2.5,
          unsharpMaskIntensity: Float = 0.5,
-         perspectivePoints: [CGPoint]? = nil) {
+         perspectiveCorrection: PerspectiveCorrection? = nil) {
         self.exposure = exposure
         self.contrast = contrast
         self.brightness = brightness
@@ -131,7 +141,7 @@ struct ImageAdjustments: Codable {
         self.bluePolynomial = bluePolynomial
         self.unsharpMaskRadius = unsharpMaskRadius
         self.unsharpMaskIntensity = unsharpMaskIntensity
-        self.perspectivePoints = perspectivePoints
+        self.perspectiveCorrection = perspectiveCorrection
     }
     
     mutating func resetAll() {
@@ -167,7 +177,7 @@ struct ImageAdjustments: Codable {
         bluePolynomial = [0, 1, 0, 0]
         unsharpMaskRadius = 2.5
         unsharpMaskIntensity = 0.5
-        perspectivePoints = nil
+        perspectiveCorrection = nil
     }
     
     // MARK: - Codable
@@ -183,7 +193,7 @@ struct ImageAdjustments: Codable {
         case lutData, lutDimension
         case redPolynomial, greenPolynomial, bluePolynomial
         case unsharpMaskRadius, unsharpMaskIntensity
-        case perspectivePoints
+        case perspectiveCorrection
     }
     
     // CGRect isn't Codable by default, so we need to handle it
@@ -268,9 +278,8 @@ struct ImageAdjustments: Codable {
         try container.encode(unsharpMaskRadius, forKey: .unsharpMaskRadius)
         try container.encode(unsharpMaskIntensity, forKey: .unsharpMaskIntensity)
         
-        if let perspectivePoints = perspectivePoints {
-            let codingPoints = perspectivePoints.map { CodingPoint(point: $0) }
-            try container.encode(codingPoints, forKey: .perspectivePoints)
+        if let perspectiveCorrection = perspectiveCorrection {
+            try container.encode(perspectiveCorrection, forKey: .perspectiveCorrection)
         }
     }
     
@@ -322,8 +331,6 @@ struct ImageAdjustments: Codable {
         unsharpMaskRadius = try container.decode(Float.self, forKey: .unsharpMaskRadius)
         unsharpMaskIntensity = try container.decode(Float.self, forKey: .unsharpMaskIntensity)
         
-        if let codingPoints = try container.decodeIfPresent([CodingPoint].self, forKey: .perspectivePoints) {
-            perspectivePoints = codingPoints.map { $0.point }
-        }
+        perspectiveCorrection = try container.decodeIfPresent(PerspectiveCorrection.self, forKey: .perspectiveCorrection)
     }
 }

@@ -19,7 +19,10 @@ class RawImageModel: ObservableObject {
         }
     }
     
-    func applyPerspectiveCorrection(points: [CGPoint]) {
-        adjustments.perspectivePoints = points
+    func applyPerspectiveCorrection(points: [CGPoint], imageSize: CGSize) {
+        adjustments.perspectiveCorrection = ImageAdjustments.PerspectiveCorrection(
+            points: points,
+            imageSize: imageSize
+        )
     }
 }

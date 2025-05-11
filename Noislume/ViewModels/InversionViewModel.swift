@@ -11,6 +11,10 @@ class InversionViewModel: ObservableObject {
     @Published var isProcessing = false
     @Published var errorMessage: String?
     
+    var hasImage: Bool {
+        imageModel.rawImageURL != nil
+    }
+    
     var exportDocument: ExportDocument? {
         guard let image = imageModel.processedImage else { return nil }
         return ExportDocument(image: image)

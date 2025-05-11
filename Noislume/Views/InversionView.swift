@@ -2,9 +2,12 @@ import SwiftUI
 import CoreImage
 
 struct AdjustmentSlider: View {
-    let title: String
+    
     @Binding var value: Float
+    
+    let title: String
     let range: ClosedRange<Float>
+    let isDisabled: Bool
     let onEditingChanged: () -> Void
     
     var body: some View {
@@ -21,6 +24,7 @@ struct AdjustmentSlider: View {
                 .onChange(of: value) { _, _ in
                     onEditingChanged()
                 }
+                .disabled(isDisabled)
         }
     }
 }
@@ -49,41 +53,46 @@ struct InversionView: View {
             VStack(spacing: 16) {
                 VStack(spacing: 16) {
                     AdjustmentSlider(
-                        title: "Temperature",
                         value: $viewModel.imageModel.adjustments.temperature,
-                        range: 2000...20000
+                        title: "Temperature",
+                        range: 2000...20000,
+                        isDisabled: viewModel.imageModel.rawImageURL == nil
                     ) {
                         Task { await viewModel.processImage() }
                     }
                     
                     AdjustmentSlider(
-                        title: "Tint",
                         value: $viewModel.imageModel.adjustments.tint,
-                        range: -150...150
+                        title: "Tint",
+                        range: -150...150,
+                        isDisabled: viewModel.imageModel.rawImageURL == nil
                     ) {
                         Task { await viewModel.processImage() }
                     }
                     
                     AdjustmentSlider(
-                        title: "Exposure",
                         value: $viewModel.imageModel.adjustments.exposure,
-                        range: -1...1
+                        title: "Exposure",
+                        range: -1...1,
+                        isDisabled: viewModel.imageModel.rawImageURL == nil
                     ) {
                         Task { await viewModel.processImage() }
                     }
                     
                     AdjustmentSlider(
-                        title: "Brightness",
                         value: $viewModel.imageModel.adjustments.brightness,
-                        range: -1...1
+                        title: "Brightness",
+                        range: -1...1,
+                        isDisabled: viewModel.imageModel.rawImageURL == nil
                     ) {
                         Task { await viewModel.processImage() }
                     }
                     
                     AdjustmentSlider(
-                        title: "Contrast",
                         value: $viewModel.imageModel.adjustments.contrast,
-                        range: 0.25...4
+                        title: "Contrast",
+                        range: 0.25...4,
+                        isDisabled: viewModel.imageModel.rawImageURL == nil
                     ) {
                         Task { await viewModel.processImage() }
                     }
@@ -93,10 +102,11 @@ struct InversionView: View {
                 Spacer()
                 
                 VStack(spacing: 8) {
-                    Toggle("Black and White?", isOn: $viewModel.imageModel.adjustments.isBlackAndWhite)
+                    Toggle("Black and White", isOn: $viewModel.imageModel.adjustments.isBlackAndWhite)
                         .onChange(of: viewModel.imageModel.adjustments.isBlackAndWhite) { _, _ in
                             Task { await viewModel.processImage() }
                         }
+                        .disabled(viewModel.imageModel.rawImageURL == nil)
                     
                     HStack(spacing: 8) {
                         Button("Load RAW") {

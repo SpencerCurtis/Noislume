@@ -1,4 +1,3 @@
-
 import SwiftUI
 
 struct SettingsView: View {
@@ -14,6 +13,8 @@ struct SettingsView: View {
                         .monospacedDigit()
                         .frame(width: 40)
                 }
+                
+                Toggle("Show original when cropping", isOn: $settings.showOriginalWhenCropping)
             }
         }
         .padding()

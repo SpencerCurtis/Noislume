@@ -10,23 +10,32 @@ import CoreImage
 import CoreImage.CIFilterBuiltins
 import AVFoundation
 import os.log
+import Combine
 
 struct CroppingView: View {
     
     @ObservedObject var viewModel: InversionViewModel
     @EnvironmentObject var settings: AppSettings
+    @Binding var showCropOverlay: Bool
     
     @State private var cornerPoints: [CGPoint] = []
-    @State private var showCropOverlay: Bool = false
-    @State private var cropOffset: CGSize = .zero
-    @State private var lastDragPosition: CGSize = .zero
     @State private var storedPerspectiveCorrection: ImageAdjustments.PerspectiveCorrection? = nil
     
+    @State private var hoveredCornerIndex: Int? = nil
+    @State private var hoveredEdgeIndex: Int? = nil
+    @State private var isHoveringCropArea: Bool = false
+
+    @State private var activeImageFrame: CGRect = .zero
+
+    @State private var renderedSwiftUIImage: Image?
+    @State private var lastUsedCIImageForRender: CIImage?
+
     private let logger = Logger(subsystem: "com.SpencerCurtis.Noislume", category: "CroppingView")
-    
+    private let cropCoordinateSpaceName = "CropCoordinateSpace"
+    private static let ciContext = CIContext()
+
     private func createImage(from ciImage: CIImage) -> Image? {
-        let context = CIContext()
-        guard let cgImage = context.createCGImage(ciImage, from: ciImage.extent) else { return nil }
+        guard let cgImage = CroppingView.ciContext.createCGImage(ciImage, from: ciImage.extent) else { return nil }
         #if os(macOS)
         return Image(nsImage: NSImage(cgImage: cgImage, size: .zero))
         #else
@@ -45,9 +54,6 @@ struct CroppingView: View {
             CGPoint(x: frame.maxX - insetX, y: frame.maxY - insetY), // Bottom right
             CGPoint(x: frame.minX + insetX, y: frame.maxY - insetY)  // Bottom left
         ]
-        
-        cropOffset = .zero
-        lastDragPosition = .zero
     }
 
     private func normalizePoints(_ points: [CGPoint], in rect: CGRect) -> [CGPoint] {
@@ -74,23 +80,12 @@ struct CroppingView: View {
         
         let scaledSize: CGSize
         if viewAspect > targetAspect {
-            // View is wider than image, so scale to view's height
-            scaledSize = CGSize(
-                width: viewSize.height * targetAspect,
-                height: viewSize.height
-            )
+            scaledSize = CGSize(width: viewSize.height * targetAspect, height: viewSize.height)
         } else {
-            // View is taller than image, scale to view's width
-            scaledSize = CGSize(
-                width: viewSize.width,
-                height: viewSize.width / targetAspect
-            )
+            scaledSize = CGSize(width: viewSize.width, height: viewSize.width / targetAspect)
         }
         
-        let origin = CGPoint(
-            x: (viewSize.width - scaledSize.width) / 2,
-            y: (viewSize.height - scaledSize.height) / 2
-        )
+        let origin = CGPoint(x: (viewSize.width - scaledSize.width) / 2, y: (viewSize.height - scaledSize.height) / 2)
         return (origin, scaledSize)
     }
 
@@ -106,10 +101,8 @@ struct CroppingView: View {
         return points.map { point in
             let clampedX = min(max(point.x, 0), imageExtent.width)
             let clampedY = min(max(point.y, 0), imageExtent.height)
-            
             let viewX = imageFrame.minX + (clampedX / imageExtent.width) * imageFrame.width
             let viewY = imageFrame.minY + (1 - (clampedY / imageExtent.height)) * imageFrame.height
-            
             return CGPoint(x: viewX, y: viewY)
         }
     }
@@ -121,10 +114,8 @@ struct CroppingView: View {
         return points.map { point in
             let clampedX = min(max(point.x, imageFrame.minX), imageFrame.maxX)
             let clampedY = min(max(point.y, imageFrame.minY), imageFrame.maxY)
-            
             let imageX = ((clampedX - imageFrame.minX) / imageFrame.width) * imageExtent.width
             let imageY = (1 - ((clampedY - imageFrame.minY) / imageFrame.height)) * imageExtent.height
-            
             return CGPoint(x: imageX, y: imageY)
         }
     }
@@ -136,201 +127,203 @@ struct CroppingView: View {
     }
 
     private func clampRectangleToImageFrame(points: [CGPoint], translation: CGSize, imageFrame: CGRect) -> CGSize {
-        // Calculate the bounds of the crop rectangle after translation
         let translatedPoints = points.map { CGPoint(x: $0.x + translation.width, y: $0.y + translation.height) }
-        
-        // Find the extremes of the translated points
         let minX = translatedPoints.min(by: { $0.x < $1.x })?.x ?? 0
         let maxX = translatedPoints.max(by: { $0.x < $1.x })?.x ?? 0
         let minY = translatedPoints.min(by: { $0.y < $1.y })?.y ?? 0
         let maxY = translatedPoints.max(by: { $0.y < $1.y })?.y ?? 0
-        
-        // Calculate the necessary adjustments
         var adjustedTranslation = translation
-        
-        if minX < imageFrame.minX {
-            adjustedTranslation.width = translation.width + (imageFrame.minX - minX)
-        }
-        if maxX > imageFrame.maxX {
-            adjustedTranslation.width = translation.width - (maxX - imageFrame.maxX)
-        }
-        if minY < imageFrame.minY {
-            adjustedTranslation.height = translation.height + (imageFrame.minY - minY)
-        }
-        if maxY > imageFrame.maxY {
-            adjustedTranslation.height = translation.height - (maxY - imageFrame.maxY)
-        }
-        
+        if minX < imageFrame.minX { adjustedTranslation.width += (imageFrame.minX - minX) }
+        if maxX > imageFrame.maxX { adjustedTranslation.width -= (maxX - imageFrame.maxX) }
+        if minY < imageFrame.minY { adjustedTranslation.height += (imageFrame.minY - minY) }
+        if maxY > imageFrame.maxY { adjustedTranslation.height -= (maxY - imageFrame.maxY) }
         return adjustedTranslation
     }
-
+    
+    private func determineCursor() -> NSCursor {
+        if let cornerIndex = hoveredCornerIndex {
+            switch cornerIndex {
+            case 0:
+                return NSCursor(image: NSImage(systemSymbolName: "arrow.up.left.and.arrow.down.right", accessibilityDescription: nil)!, hotSpot: NSPoint(x: 8, y: 8))
+            case 1:
+                return NSCursor(image: NSImage(systemSymbolName: "arrow.up.right.and.arrow.down.left", accessibilityDescription: nil)!, hotSpot: NSPoint(x: 8, y: 8))
+            case 2:
+                 return NSCursor(image: NSImage(systemSymbolName: "arrow.up.left.and.arrow.down.right", accessibilityDescription: nil)!, hotSpot: NSPoint(x: 8, y: 8))
+            case 3:
+                 return NSCursor(image: NSImage(systemSymbolName: "arrow.up.right.and.arrow.down.left", accessibilityDescription: nil)!, hotSpot: NSPoint(x: 8, y: 8))
+            default:
+                return .arrow
+            }
+        } else if let edgeIndex = hoveredEdgeIndex {
+             if edgeIndex == 0 || edgeIndex == 2 {
+                return NSCursor.resizeUpDown
+            } else {
+                return NSCursor.resizeLeftRight
+            }
+        } else if isHoveringCropArea {
+            return NSCursor.openHand
+        } else {
+            return .arrow
+        }
+    }
+    
+    private func updateRenderedImageAndFrameState(ciImage: CIImage?, geometrySize: CGSize) {
+        if let currentCIImage = ciImage {
+            if renderedSwiftUIImage == nil || currentCIImage !== lastUsedCIImageForRender {
+                self.renderedSwiftUIImage = createImage(from: currentCIImage)
+                self.lastUsedCIImageForRender = currentCIImage
+            }
+            let imageContentSize = CGSize(width: currentCIImage.extent.width, height: currentCIImage.extent.height)
+            self.activeImageFrame = AVMakeRect(aspectRatio: imageContentSize, insideRect: CGRect(origin: .zero, size: geometrySize))
+        } else {
+            self.renderedSwiftUIImage = nil
+            self.lastUsedCIImageForRender = nil
+            self.activeImageFrame = .zero
+        }
+    }
+    
     var body: some View {
-        GeometryReader { geo in
+        let baseView = GeometryReader { geo in
             ZStack {
-                if let image = viewModel.imageModel.processedImage,
-                   let swiftUIImage = createImage(from: image) {
-                    swiftUIImage
+                if let imageToDisplay = renderedSwiftUIImage {
+                    imageToDisplay
                         .resizable()
                         .aspectRatio(contentMode: .fit)
                         .frame(maxHeight: .infinity)
                         .scaledToFit()
                         .frame(width: geo.size.width, height: geo.size.height)
-                        .onAppear {
-                            let imageSize = CGSize(width: image.extent.width, height: image.extent.height)
-                            let imageFrame = AVMakeRect(aspectRatio: imageSize, insideRect: CGRect(origin: .zero, size: geo.size))
-                            
-                            if let correction = viewModel.imageModel.adjustments.perspectiveCorrection {
-                                cornerPoints = convertPointsFromImageToView(correction.points,
-                                                                         imageExtent: CGRect(origin: .zero, size: correction.originalImageSize),
-                                                                         viewFrame: CGRect(origin: .zero, size: geo.size))
-                            } else {
-                                resetCropPoints(in: imageFrame)
-                            }
-                        }
                         .overlay {
-                            if showCropOverlay {
+                            if showCropOverlay && activeImageFrame != .zero {
                                 ZStack {
-                                    let imageFrame = AVMakeRect(aspectRatio: CGSize(width: image.extent.width, height: image.extent.height),
-                                                              insideRect: CGRect(origin: .zero, size: geo.size))
-                                    
-                                    CropOverlay(cornerPoints: cornerPoints)
-                                        .offset(cropOffset)
-                                        .gesture(
-                                            DragGesture(minimumDistance: 0)
-                                                .onChanged { value in
-                                                    let translation = CGSize(
-                                                        width: lastDragPosition.width + value.translation.width,
-                                                        height: lastDragPosition.height + value.translation.height
-                                                    )
-                                                    cropOffset = clampRectangleToImageFrame(
-                                                        points: cornerPoints,
-                                                        translation: translation,
-                                                        imageFrame: imageFrame
-                                                    )
-                                                }
-                                                .onEnded { value in
-                                                    let clampedTranslation = clampRectangleToImageFrame(
-                                                        points: cornerPoints,
-                                                        translation: value.translation,
-                                                        imageFrame: imageFrame
-                                                    )
-                                                    
-                                                    lastDragPosition = .zero
-                                                    cropOffset = .zero
-                                                    
-                                                    for i in cornerPoints.indices {
-                                                        cornerPoints[i] = CGPoint(
-                                                            x: cornerPoints[i].x + clampedTranslation.width,
-                                                            y: cornerPoints[i].y + clampedTranslation.height
-                                                        )
-                                                    }
-                                                }
+                                    if cornerPoints.count == 4 {
+                                        CropOverlay(
+                                            cornerPoints: $cornerPoints,
+                                            imageFrame: activeImageFrame,
+                                            parentCoordinateSpaceName: cropCoordinateSpaceName,
+                                            onHover: { hovering in
+                                                self.isHoveringCropArea = hovering
+                                            }
                                         )
-                                    
+                                    }
                                     CornerHandles(geometrySize: geo.size,
                                                 cornerPoints: $cornerPoints,
-                                                imageFrame: imageFrame)
-                                        .offset(cropOffset)
+                                                imageFrame: activeImageFrame,
+                                                hoveredCornerIndex: $hoveredCornerIndex,
+                                                parentCoordinateSpaceName: cropCoordinateSpaceName)
+                                    EdgeHandles(geometrySize: geo.size,
+                                                cornerPoints: $cornerPoints,
+                                                imageFrame: activeImageFrame,
+                                                parentCoordinateSpaceName: cropCoordinateSpaceName,
+                                                hoveredEdgeIndex: $hoveredEdgeIndex)
                                 }
+                                .coordinateSpace(name: cropCoordinateSpaceName)
                             }
                         }
                 } else {
                     Text("No image loaded")
                         .frame(maxHeight: .infinity)
                 }
-                
-                VStack {
-                    Spacer()
-                    HStack {
-                        Button(showCropOverlay ? "Cancel Crop" : "Crop") {
-                            if showCropOverlay {
-                                if settings.showOriginalWhenCropping {
-                                    if let stored = storedPerspectiveCorrection {
-                                        viewModel.imageModel.adjustments.perspectiveCorrection = stored
-                                        Task {
-                                            await viewModel.processImage()
-                                        }
-                                    }
-                                }
-                                showCropOverlay = false
-                            } else {
-                                if settings.showOriginalWhenCropping {
-                                    storedPerspectiveCorrection = viewModel.imageModel.adjustments.perspectiveCorrection
-                                    if let correction = viewModel.imageModel.adjustments.perspectiveCorrection {
-                                        cornerPoints = convertPointsFromImageToView(correction.points,
-                                                                                 imageExtent: CGRect(origin: .zero, size: correction.originalImageSize),
-                                                                                 viewFrame: CGRect(origin: .zero, size: geo.size))
-                                    }
-                                    viewModel.imageModel.adjustments.perspectiveCorrection = nil
-                                    Task {
-                                        await viewModel.processImage()
-                                    }
-                                }
-                                showCropOverlay = true
-                            }
+            }
+            .onAppear {
+                updateRenderedImageAndFrameState(ciImage: viewModel.imageModel.processedImage, geometrySize: geo.size)
+                if activeImageFrame != .zero {
+                    if let correction = viewModel.imageModel.adjustments.perspectiveCorrection {
+                        cornerPoints = convertPointsFromImageToView(correction.points,
+                                                                 imageExtent: CGRect(origin: .zero, size: correction.originalImageSize),
+                                                                 viewFrame: CGRect(origin: .zero, size: geo.size))
+                    } else {
+                        resetCropPoints(in: activeImageFrame)
+                    }
+                } else {
+                    cornerPoints = []
+                }
+            }
+            .onChange(of: geo.size) { _, newGeoSize in
+                updateRenderedImageAndFrameState(ciImage: viewModel.imageModel.processedImage, geometrySize: newGeoSize)
+            }
+            .onChange(of: viewModel.imageModel.processedImage) { _, newCIImage in
+                updateRenderedImageAndFrameState(ciImage: newCIImage, geometrySize: geo.size)
+                if activeImageFrame != .zero {
+                    if newCIImage != nil && viewModel.imageModel.adjustments.perspectiveCorrection == nil {
+                        resetCropPoints(in: activeImageFrame)
+                    } else if newCIImage == nil {
+                        cornerPoints = []
+                    }
+                    if let correction = viewModel.imageModel.adjustments.perspectiveCorrection, activeImageFrame != .zero {
+                         cornerPoints = convertPointsFromImageToView(correction.points,
+                                                                  imageExtent: CGRect(origin: .zero, size: correction.originalImageSize),
+                                                                  viewFrame: CGRect(origin: .zero, size: geo.size))
+                    }
+                } else {
+                     cornerPoints = []
+                }
+            }
+            .onChange(of: showCropOverlay) { _, isShowing in
+                if isShowing {
+                    if renderedSwiftUIImage == nil || activeImageFrame == .zero {
+                         updateRenderedImageAndFrameState(ciImage: viewModel.imageModel.processedImage, geometrySize: geo.size)
+                    }
+                    if cornerPoints.isEmpty && activeImageFrame != .zero {
+                        if let correction = viewModel.imageModel.adjustments.perspectiveCorrection {
+                            cornerPoints = convertPointsFromImageToView(correction.points,
+                                                                     imageExtent: CGRect(origin: .zero, size: correction.originalImageSize),
+                                                                     viewFrame: CGRect(origin: .zero, size: geo.size))
+                        } else {
+                            resetCropPoints(in: activeImageFrame)
                         }
-                        .padding()
-                        .background(.black.opacity(0.7))
-                        .foregroundColor(.white)
-                        .clipShape(RoundedRectangle(cornerRadius: 8))
-                        .padding(.bottom, showCropOverlay ? 0 : 16)
-                        
-                        if showCropOverlay {
-                            Button("Reset Crop") {
-                                if let image = viewModel.imageModel.processedImage {
-                                    let imageSize = CGSize(width: image.extent.width, height: image.extent.height)
-                                    let imageFrame = AVMakeRect(aspectRatio: imageSize, insideRect: CGRect(origin: .zero, size: geo.size))
-                                    resetCropPoints(in: imageFrame)
-                                }
-                            }
-                            .padding()
-                            .background(.red.opacity(0.7))
-                            .foregroundColor(.white)
-                            .clipShape(RoundedRectangle(cornerRadius: 8))
-                            
-                            Button("Reset Image") {
-                                storedPerspectiveCorrection = nil
-                                viewModel.imageModel.adjustments.perspectiveCorrection = nil
-                                Task {
-                                    await viewModel.processImage()
-                                    showCropOverlay = false
-                                }
-                            }
-                            .padding()
-                            .background(.purple.opacity(0.7))
-                            .foregroundColor(.white)
-                            .clipShape(RoundedRectangle(cornerRadius: 8))
-                            
-                            Button("Apply Perspective Crop") {
-                                applyCrop(in: geo.size)
-                                storedPerspectiveCorrection = nil
-                                showCropOverlay = false
-                            }
-                            .padding()
-                            .background(.blue.opacity(0.8))
-                            .foregroundColor(.white)
-                            .clipShape(RoundedRectangle(cornerRadius: 8))
-                            .padding()
+                    }
+
+                    if settings.showOriginalWhenCropping {
+                        storedPerspectiveCorrection = viewModel.imageModel.adjustments.perspectiveCorrection
+                        viewModel.imageModel.adjustments.perspectiveCorrection = nil
+                        Task { await viewModel.processImage() }
+                    }
+                } else {
+                    if settings.showOriginalWhenCropping {
+                        if let stored = storedPerspectiveCorrection {
+                            viewModel.imageModel.adjustments.perspectiveCorrection = stored
+                            storedPerspectiveCorrection = nil
+                            Task { await viewModel.processImage() }
                         }
                     }
                 }
             }
+            .onReceive(NotificationCenter.default.publisher(for: Notification.Name("ResetCrop"))) { _ in
+                if let image = viewModel.imageModel.processedImage {
+                    let imageContentSize = CGSize(width: image.extent.width, height: image.extent.height)
+                    let frameForReset = AVMakeRect(aspectRatio: imageContentSize, insideRect: CGRect(origin: .zero, size: geo.size))
+                    self.activeImageFrame = frameForReset
+                    resetCropPoints(in: frameForReset)
+                }
+            }
+            .onReceive(NotificationCenter.default.publisher(for: Notification.Name("ResetImage"))) { _ in
+                storedPerspectiveCorrection = nil
+                viewModel.imageModel.adjustments.perspectiveCorrection = nil
+                Task { await viewModel.processImage(); showCropOverlay = false }
+            }
+            .onReceive(NotificationCenter.default.publisher(for: Notification.Name("ApplyCrop"))) { _ in
+                applyCrop(in: geo.size)
+                storedPerspectiveCorrection = nil
+                showCropOverlay = false
+            }
         }
+
+        #if os(macOS)
+        return baseView
+        #else
+        return baseView
+        #endif
     }
 
     func applyCrop(in viewSize: CGSize) {
         guard let inputImage = viewModel.imageModel.processedImage else { return }
-        
         let imagePoints = convertPointsFromViewToImage(cornerPoints,
                                                      imageExtent: inputImage.extent,
                                                      viewFrame: CGRect(origin: .zero, size: viewSize))
-        
         viewModel.imageModel.applyPerspectiveCorrection(
             points: imagePoints,
             imageSize: CGSize(width: inputImage.extent.width, height: inputImage.extent.height)
         )
-        
         Task { await viewModel.processImage() }
     }
-
 }

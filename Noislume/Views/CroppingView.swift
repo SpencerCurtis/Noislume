@@ -33,6 +33,9 @@ struct CroppingView: View {
     private let logger = Logger(subsystem: "com.SpencerCurtis.Noislume", category: "CroppingView")
     private let cropCoordinateSpaceName = "CropCoordinateSpace"
     private static let ciContext = CIContext()
+    private let cornerHoverSubject = PassthroughSubject<Int?, Never>()
+    private let edgeHoverSubject = PassthroughSubject<Int?, Never>()
+    private let areaHoverSubject = PassthroughSubject<Bool, Never>()
 
     private func createImage(from ciImage: CIImage) -> Image? {
         guard let cgImage = CroppingView.ciContext.createCGImage(ciImage, from: ciImage.extent) else { return nil }
@@ -142,18 +145,57 @@ struct CroppingView: View {
     
     private func determineCursor() -> NSCursor {
         if let cornerIndex = hoveredCornerIndex {
+            let whiteConfig = NSImage.SymbolConfiguration
+                .init(pointSize: 18, weight: .regular)
+                .applying(.init(paletteColors: [.white]))
+            
+            let blackConfig = NSImage.SymbolConfiguration
+                .init(pointSize: 22, weight: .regular)
+                .applying(.init(paletteColors: [.black]))
+            
+            let symbolName: String
             switch cornerIndex {
-            case 0:
-                return NSCursor(image: NSImage(systemSymbolName: "arrow.up.left.and.arrow.down.right", accessibilityDescription: nil)!, hotSpot: NSPoint(x: 8, y: 8))
-            case 1:
-                return NSCursor(image: NSImage(systemSymbolName: "arrow.up.right.and.arrow.down.left", accessibilityDescription: nil)!, hotSpot: NSPoint(x: 8, y: 8))
-            case 2:
-                 return NSCursor(image: NSImage(systemSymbolName: "arrow.up.left.and.arrow.down.right", accessibilityDescription: nil)!, hotSpot: NSPoint(x: 8, y: 8))
-            case 3:
-                 return NSCursor(image: NSImage(systemSymbolName: "arrow.up.right.and.arrow.down.left", accessibilityDescription: nil)!, hotSpot: NSPoint(x: 8, y: 8))
+            case 0, 2:
+                symbolName = "arrow.up.left.and.arrow.down.right"
+            case 1, 3:
+                symbolName = "arrow.up.right.and.arrow.down.left"
             default:
                 return .arrow
             }
+            
+            let whiteImage = NSImage(systemSymbolName: symbolName, accessibilityDescription: nil)!
+                .withSymbolConfiguration(whiteConfig)!
+            let blackImage = NSImage(systemSymbolName: symbolName, accessibilityDescription: nil)!
+                .withSymbolConfiguration(blackConfig)!
+            
+            let finalSize = NSSize(width: 24, height: 24)
+            let finalImage = NSImage(size: finalSize)
+            
+            finalImage.lockFocus()
+            
+            let offsets: [CGPoint] = [
+                .zero,
+                CGPoint(x: 0.5, y: 0),
+                CGPoint(x: -0.5, y: 0),
+                CGPoint(x: 0, y: 0.5),
+                CGPoint(x: 0, y: -0.5)
+            ]
+            
+            for offset in offsets {
+                blackImage.draw(in: NSRect(
+                    origin: offset,
+                    size: finalSize
+                ))
+            }
+            
+            whiteImage.draw(in: NSRect(
+                origin: NSPoint(x: 2, y: 2),
+                size: NSSize(width: 20, height: 20)
+            ))
+            
+            finalImage.unlockFocus()
+            
+            return NSCursor(image: finalImage, hotSpot: NSPoint(x: 12, y: 12))
         } else if let edgeIndex = hoveredEdgeIndex {
              if edgeIndex == 0 || edgeIndex == 2 {
                 return NSCursor.resizeUpDown
@@ -166,7 +208,7 @@ struct CroppingView: View {
             return .arrow
         }
     }
-    
+
     private func updateRenderedImageAndFrameState(ciImage: CIImage?, geometrySize: CGSize) {
         if let currentCIImage = ciImage {
             if renderedSwiftUIImage == nil || currentCIImage !== lastUsedCIImageForRender {
@@ -183,42 +225,10 @@ struct CroppingView: View {
     }
     
     var body: some View {
-        let baseView = GeometryReader { geo in
+        GeometryReader { geo in
             ZStack {
                 if let imageToDisplay = renderedSwiftUIImage {
-                    imageToDisplay
-                        .resizable()
-                        .aspectRatio(contentMode: .fit)
-                        .frame(maxHeight: .infinity)
-                        .scaledToFit()
-                        .frame(width: geo.size.width, height: geo.size.height)
-                        .overlay {
-                            if showCropOverlay && activeImageFrame != .zero {
-                                ZStack {
-                                    if cornerPoints.count == 4 {
-                                        CropOverlay(
-                                            cornerPoints: $cornerPoints,
-                                            imageFrame: activeImageFrame,
-                                            parentCoordinateSpaceName: cropCoordinateSpaceName,
-                                            onHover: { hovering in
-                                                self.isHoveringCropArea = hovering
-                                            }
-                                        )
-                                    }
-                                    CornerHandles(geometrySize: geo.size,
-                                                cornerPoints: $cornerPoints,
-                                                imageFrame: activeImageFrame,
-                                                hoveredCornerIndex: $hoveredCornerIndex,
-                                                parentCoordinateSpaceName: cropCoordinateSpaceName)
-                                    EdgeHandles(geometrySize: geo.size,
-                                                cornerPoints: $cornerPoints,
-                                                imageFrame: activeImageFrame,
-                                                parentCoordinateSpaceName: cropCoordinateSpaceName,
-                                                hoveredEdgeIndex: $hoveredEdgeIndex)
-                                }
-                                .coordinateSpace(name: cropCoordinateSpaceName)
-                            }
-                        }
+                    image(imageToDisplay: imageToDisplay, geo: geo)
                 } else {
                     Text("No image loaded")
                         .frame(maxHeight: .infinity)
@@ -306,13 +316,65 @@ struct CroppingView: View {
                 storedPerspectiveCorrection = nil
                 showCropOverlay = false
             }
+            .onReceive(edgeHoverSubject) { index in
+                if self.hoveredEdgeIndex != index {
+                    self.hoveredEdgeIndex = index
+                    determineCursor().set()
+                }
+            }
+            .onReceive(cornerHoverSubject) { index in
+                if self.hoveredCornerIndex != index {
+                    self.hoveredCornerIndex = index
+                    determineCursor().set()
+                }
+            }
+            .onReceive(areaHoverSubject) { hovering in
+                if self.isHoveringCropArea != hovering {
+                    self.isHoveringCropArea = hovering
+                    determineCursor().set()
+                }
+            }
         }
-
-        #if os(macOS)
-        return baseView
-        #else
-        return baseView
-        #endif
+    }
+    
+    func image(imageToDisplay: Image, geo: GeometryProxy) -> some View {
+        imageToDisplay
+            .resizable()
+            .aspectRatio(contentMode: .fit)
+            .frame(maxHeight: .infinity)
+            .scaledToFit()
+            .frame(width: geo.size.width, height: geo.size.height)
+            .overlay {
+                if showCropOverlay && activeImageFrame != .zero {
+                    ZStack {
+                        if cornerPoints.count == 4 {
+                            CropOverlay(
+                                cornerPoints: $cornerPoints,
+                                imageFrame: activeImageFrame,
+                                parentCoordinateSpaceName: cropCoordinateSpaceName,
+                                onHover: { hovering in
+                                    self.areaHoverSubject.send(hovering)
+                                }
+                            )
+                        }
+                        CornerHandles(geometrySize: geo.size,
+                                    cornerPoints: $cornerPoints,
+                                    imageFrame: activeImageFrame,
+                                    onHoverCallback: { index in
+                                        self.cornerHoverSubject.send(index)
+                                    },
+                                    parentCoordinateSpaceName: cropCoordinateSpaceName)
+                        EdgeHandles(geometrySize: geo.size,
+                                  cornerPoints: $cornerPoints,
+                                  imageFrame: activeImageFrame,
+                                  parentCoordinateSpaceName: cropCoordinateSpaceName,
+                                  onHoverCallback: { index in
+                                      self.edgeHoverSubject.send(index)
+                                  })
+                    }
+                    .coordinateSpace(name: cropCoordinateSpaceName)
+                }
+            }
     }
 
     func applyCrop(in viewSize: CGSize) {

@@ -1,144 +1,29 @@
-
 import AppKit
-import SwiftUI // For AppSettings and potentially ShortcutTypes if needed later
+import SwiftUI
 
 class MainMenuManager {
+
+    // MARK: - Public Methods
 
     func createMainMenu(settings: AppSettings) -> NSMenu {
         let mainMenu = NSMenu()
 
-        // App Menu
-        mainMenu.addItem(createAppMenuItem())
-        // File Menu
-        mainMenu.addItem(createFileMenuItem())
-        // Edit Menu
-        mainMenu.addItem(createEditMenuItem())
+        mainMenu.addItem(createAppMenuItem(settings: settings))
+        mainMenu.addItem(createFileMenuItem(settings: settings))
+        mainMenu.addItem(createEditMenuItem(settings: settings))
 
         return mainMenu
-    }
-
-    private func createAppMenuItem() -> NSMenuItem {
-        let appMenuItem = NSMenuItem()
-        let appMenu = NSMenu() // No title for the main app menu
-        appMenuItem.submenu = appMenu
-
-        appMenu.addItem(NSMenuItem(
-            title: "About Noislume",
-            action: #selector(NSApplication.orderFrontStandardAboutPanel(_:)),
-            keyEquivalent: ""
-        ))
-        appMenu.addItem(.separator())
-        appMenu.addItem(NSMenuItem(
-            title: "Settings...",
-            action: #selector(AppDelegate.showSettings), // Assumes AppDelegate will handle this
-            keyEquivalent: ","
-        ))
-        appMenu.addItem(.separator())
-
-        let servicesItem = NSMenuItem(title: "Services", action: nil, keyEquivalent: "")
-        let servicesMenu = NSMenu(title: "Services")
-        servicesItem.submenu = servicesMenu
-        appMenu.addItem(servicesItem)
-        NSApp.servicesMenu = servicesMenu // NSApp.servicesMenu should be set here
-
-        appMenu.addItem(.separator())
-        appMenu.addItem(NSMenuItem(
-            title: "Hide Noislume",
-            action: #selector(NSApplication.hide(_:)),
-            keyEquivalent: "h"
-        ))
-        let hideOthersItem = NSMenuItem(
-            title: "Hide Others",
-            action: #selector(NSApplication.hideOtherApplications(_:)),
-            keyEquivalent: "h"
-        )
-        hideOthersItem.keyEquivalentModifierMask = [.command, .option]
-        appMenu.addItem(hideOthersItem)
-        appMenu.addItem(NSMenuItem(
-            title: "Show All",
-            action: #selector(NSApplication.unhideAllApplications(_:)),
-            keyEquivalent: ""
-        ))
-        appMenu.addItem(.separator())
-        appMenu.addItem(NSMenuItem(
-            title: "Quit Noislume",
-            action: #selector(NSApplication.terminate(_:)),
-            keyEquivalent: "q"
-        ))
-        return appMenuItem
-    }
-
-    private func createFileMenuItem() -> NSMenuItem {
-        let fileMenuItem = NSMenuItem()
-        let fileMenu = NSMenu(title: "File")
-        fileMenuItem.submenu = fileMenu
-
-        // Action posts notification, shortcut managed by updateShortcuts
-        let openItem = NSMenuItem(
-            title: "Open...",
-            action: #selector(AppDelegate.handleOpenFile), // Keep target for shortcut system
-            keyEquivalent: "o" // Default, will be overridden by saved shortcut
-        )
-        fileMenu.addItem(openItem)
-
-        // Action posts notification, shortcut managed by updateShortcuts
-        let saveItem = NSMenuItem(
-            title: "Save...",
-            action: #selector(AppDelegate.handleSaveFile), // Keep target for shortcut system
-            keyEquivalent: "s" // Default, will be overridden by saved shortcut
-        )
-        fileMenu.addItem(saveItem)
-        
-        return fileMenuItem
-    }
-
-    private func createEditMenuItem() -> NSMenuItem {
-        let editMenuItem = NSMenuItem()
-        let editMenu = NSMenu(title: "Edit")
-        editMenuItem.submenu = editMenu
-
-        // Standard Edit Menu Items (Undo/Redo often handled by responder chain)
-        let undoItem = NSMenuItem(title: "Undo", action: Selector(("undo:")), keyEquivalent: "z")
-        editMenu.addItem(undoItem)
-        let redoItem = NSMenuItem(title: "Redo", action: Selector(("redo:")), keyEquivalent: "Z") // Conventionally Shift+Cmd+Z for Redo
-        editMenu.addItem(redoItem)
-        
-        editMenu.addItem(.separator())
-
-        // Action posts notification, shortcut managed by updateShortcuts
-        let toggleCropItem = NSMenuItem(
-            title: "Toggle Crop",
-            action: #selector(AppDelegate.handleToggleCrop), // Keep target for shortcut system
-            keyEquivalent: "k" // Example default, will be overridden
-        )
-        editMenu.addItem(toggleCropItem)
-
-        // Action posts notification, shortcut managed by updateShortcuts
-        let resetAdjustmentsItem = NSMenuItem(
-            title: "Reset Adjustments",
-            action: #selector(AppDelegate.handleResetAdjustments), // Keep target for shortcut system
-            keyEquivalent: "r" // Example default, will be overridden
-        )
-        editMenu.addItem(resetAdjustmentsItem)
-
-        return editMenuItem
     }
 
     func updateShortcuts(on menu: NSMenu, using settings: AppSettings) {
         func updateMenuItem(in menu: NSMenu, title: String, actionId: String, defaultActionSelector: Selector) {
             guard let item = menu.items.first(where: { $0.title == title && $0.action == defaultActionSelector }) else {
-                print("Debug: Could not find menu item '\(title)' with selector '\(defaultActionSelector)' to update shortcut for \(actionId)")
                 return
             }
             
             if let shortcut = settings.getShortcut(forAction: actionId) {
                 item.keyEquivalent = shortcut.key.lowercased()
                 item.keyEquivalentModifierMask = shortcut.modifiers
-            } else {
-                // If no shortcut is saved, it will use the default keyEquivalent set during creation or be empty.
-                // You might want to clear it or set a specific default if not set during creation.
-                // For now, we rely on the keyEquivalent set in create...MenuItem methods.
-                print("Debug: No shortcut found for \(actionId), item '\(title)' will use its default keyEquivalent ('\(item.keyEquivalent)')")
             }
         }
 
@@ -152,14 +37,77 @@ class MainMenuManager {
             updateMenuItem(in: editMenu, title: "Reset Adjustments", actionId: "resetAdjustmentsAction", defaultActionSelector: #selector(AppDelegate.handleResetAdjustments))
         }
     }
-}
 
-// Extension to allow AppDelegate to call showSettings if needed for menu item
-// This is a bit of a hack. A cleaner way would be for AppDelegate to expose a static method
-// or for the menu item to post a notification that AppDelegate listens for to show settings.
-// For now, to keep changes minimal and ensure selectors work:
-extension AppDelegate {
-    @objc func showSettingsMenuAction() {
-        self.showSettings()
+    // MARK: - Menu Creation Helpers
+
+    @discardableResult
+    private func addItem(to menu: NSMenu,
+                         title: String,
+                         action: Selector? = nil,
+                         keyEquivalent: String = "",
+                         keyEquivalentModifierMask: NSEvent.ModifierFlags = [],
+                         customize: ((NSMenuItem) -> Void)? = nil) -> NSMenuItem {
+        let menuItem = NSMenuItem(title: title, action: action, keyEquivalent: keyEquivalent)
+        menuItem.keyEquivalentModifierMask = keyEquivalentModifierMask
+        customize?(menuItem)
+        menu.addItem(menuItem)
+        return menuItem
+    }
+
+    private func addSeparator(to menu: NSMenu) {
+        menu.addItem(.separator())
+    }
+
+    // MARK: - Specific Menu Construction
+
+    private func createAppMenuItem(settings: AppSettings) -> NSMenuItem {
+        let appMenuItem = NSMenuItem()
+        let appMenu = NSMenu() // No title for the main app menu itself
+        appMenuItem.submenu = appMenu
+
+        addItem(to: appMenu, title: "About Noislume", action: #selector(NSApplication.orderFrontStandardAboutPanel(_:)))
+        addSeparator(to: appMenu)
+        addItem(to: appMenu, title: "Settings...", action: #selector(AppDelegate.showSettings), keyEquivalent: ",", keyEquivalentModifierMask: .command)
+        addSeparator(to: appMenu)
+
+        addItem(to: appMenu, title: "Services", action: nil) { menuItem in
+            let servicesMenu = NSMenu(title: "Services")
+            menuItem.submenu = servicesMenu
+            NSApp.servicesMenu = servicesMenu // Crucial for system services integration
+        }
+        
+        addSeparator(to: appMenu)
+        addItem(to: appMenu, title: "Hide Noislume", action: #selector(NSApplication.hide(_:)), keyEquivalent: "h")
+        addItem(to: appMenu, title: "Hide Others", action: #selector(NSApplication.hideOtherApplications(_:)), keyEquivalent: "h", keyEquivalentModifierMask: [.command, .option])
+        addItem(to: appMenu, title: "Show All", action: #selector(NSApplication.unhideAllApplications(_:)))
+        addSeparator(to: appMenu)
+        addItem(to: appMenu, title: "Quit Noislume", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q")
+        
+        return appMenuItem
+    }
+
+    private func createFileMenuItem(settings: AppSettings) -> NSMenuItem {
+        let fileMenuItem = NSMenuItem()
+        let fileMenu = NSMenu(title: "File")
+        fileMenuItem.submenu = fileMenu
+
+        addItem(to: fileMenu, title: "Open...", action: #selector(AppDelegate.handleOpenFile), keyEquivalent: "o")
+        addItem(to: fileMenu, title: "Save...", action: #selector(AppDelegate.handleSaveFile), keyEquivalent: "s")
+        
+        return fileMenuItem
+    }
+
+    private func createEditMenuItem(settings: AppSettings) -> NSMenuItem {
+        let editMenuItem = NSMenuItem()
+        let editMenu = NSMenu(title: "Edit")
+        editMenuItem.submenu = editMenu
+
+        addItem(to: editMenu, title: "Undo", action: Selector(("undo:")), keyEquivalent: "z", keyEquivalentModifierMask: .command)
+        addItem(to: editMenu, title: "Redo", action: Selector(("redo:")), keyEquivalent: "z", keyEquivalentModifierMask: [.command, .shift])
+        addSeparator(to: editMenu)
+        addItem(to: editMenu, title: "Toggle Crop", action: #selector(AppDelegate.handleToggleCrop), keyEquivalent: "k")
+        addItem(to: editMenu, title: "Reset Adjustments", action: #selector(AppDelegate.handleResetAdjustments), keyEquivalent: "r")
+
+        return editMenuItem
     }
 }

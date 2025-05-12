@@ -8,24 +8,30 @@
 import SwiftUI
 import os.log
 
-@main
 struct NoislumeApp: App {
+    
+    @StateObject private var settings = AppSettings()
+    
     init() {
         // Verify frameworks on startup
         FrameworkVerifier.verifyFrameworks()
     }
     
-    @StateObject private var settings = AppSettings()
-    
     var body: some Scene {
         WindowGroup {
             ContentView()
-                .environmentObject(settings)
         }
         #if os(macOS)
-        Settings {
-            SettingsView(settings: settings)
-        }
+        // Settings {
+        //     SettingsView(settings: settings)
+        // }
         #endif
     }
+}
+
+extension Notification.Name {
+    static let openFile = Notification.Name("openFile")
+    static let saveFile = Notification.Name("saveFile")
+    static let toggleCrop = Notification.Name("toggleCrop")
+    static let resetAdjustments = Notification.Name("resetAdjustments")
 }

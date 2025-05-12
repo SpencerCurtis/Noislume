@@ -29,6 +29,12 @@ struct InversionView: View {
                 showCropOverlay: $showCropOverlay
             )
         }
+        .onAppear {
+            setupNotifications()
+        }
+        .onDisappear {
+            NotificationCenter.default.removeObserver(self)
+        }
         .fileImporter(
             isPresented: $showFileImporter,
             allowedContentTypes: [.rawImage],
@@ -59,6 +65,46 @@ struct InversionView: View {
             }
         } message: {
             Text(viewModel.errorMessage ?? "")
+        }
+    }
+    
+    private func setupNotifications() {
+        // Open File
+        NotificationCenter.default.addObserver(
+            forName: .openFile,
+            object: nil,
+            queue: .main
+        ) { _ in
+            showFileImporter = true
+        }
+        
+        // Save File
+        NotificationCenter.default.addObserver(
+            forName: .saveFile,
+            object: nil,
+            queue: .main
+        ) { _ in
+            showExporter = true
+        }
+        
+        // Toggle Crop
+        NotificationCenter.default.addObserver(
+            forName: .toggleCrop,
+            object: nil,
+            queue: .main
+        ) { _ in
+            showCropOverlay.toggle()
+        }
+        
+        // Reset Adjustments
+        NotificationCenter.default.addObserver(
+            forName: .resetAdjustments,
+            object: nil,
+            queue: .main
+        ) { [viewModel] _ in
+            Task { @MainActor in
+                viewModel.imageModel.adjustments = .init()
+            }
         }
     }
 }

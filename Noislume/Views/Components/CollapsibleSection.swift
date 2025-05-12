@@ -18,6 +18,7 @@ struct CollapsibleSection: View {
                     Image(systemName: "chevron.right")
                         .rotationEffect(.degrees(isExpanded ? 90 : 0))
                 }
+                .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
             

@@ -44,10 +44,22 @@ class InversionViewModel: ObservableObject {
     // Add cancellables storage
     private var cancellables = Set<AnyCancellable>()
     
+    // Add ThumbnailCacheManager instance
+    private let thumbnailFileCacheManager: ThumbnailCacheManager
+    // Access AppSettings (Ideally injected or from Environment)
+    let appSettings = AppSettings.shared
+    
     init() {
-        // Initialize ThumbnailManager with the shared processor
-        self.thumbnailManager = ThumbnailManager(processor: self.processor)
-        logger.info("Initialized InversionViewModel with ThumbnailManager.")
+        // Initialize ThumbnailCacheManager with AppSettings
+        self.thumbnailFileCacheManager = ThumbnailCacheManager(appSettings: appSettings)
+
+        // Initialize ThumbnailManager with its new dependencies
+        self.thumbnailManager = ThumbnailManager(
+            processor: self.processor, 
+            fileCacheManager: self.thumbnailFileCacheManager, // Pass the initialized manager
+            appSettings: appSettings // Pass the same settings instance
+        )
+        logger.info("Initialized InversionViewModel with ThumbnailManager (including file cache support).")
         
         // Forward objectWillChange from thumbnailManager
         thumbnailManager.objectWillChange

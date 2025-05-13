@@ -6,6 +6,8 @@ import os.log
 class ThumbnailManager: ObservableObject {
     private let logger = Logger(subsystem: "com.SpencerCurtis.Noislume", category: "ThumbnailManager")
     private let processor: CoreImageProcessor // Dependency
+    private let fileCacheManager: ThumbnailCacheManager // Add file cache manager
+    private let appSettings: AppSettings // Add app settings
     private let thumbnailWidth: CGFloat
     
     // Cache and state
@@ -21,8 +23,15 @@ class ThumbnailManager: ObservableObject {
         thumbnailGenerationQueue.isEmpty && activeThumbnailTasksCount == 0 && isLoadingThumbnail.values.filter { $0 }.isEmpty
     }
 
-    init(processor: CoreImageProcessor, thumbnailWidth: CGFloat = 160, cacheCountLimit: Int = 50, cacheTotalCostLimitMB: Int = 20) {
+    init(processor: CoreImageProcessor, 
+         fileCacheManager: ThumbnailCacheManager, // Inject manager
+         appSettings: AppSettings,             // Inject settings
+         thumbnailWidth: CGFloat = 160, 
+         cacheCountLimit: Int = 50, 
+         cacheTotalCostLimitMB: Int = 20) {
         self.processor = processor
+        self.fileCacheManager = fileCacheManager // Store injected manager
+        self.appSettings = appSettings           // Store injected settings
         self.thumbnailWidth = thumbnailWidth
         self.thumbnailCache.countLimit = cacheCountLimit
         self.thumbnailCache.totalCostLimit = cacheTotalCostLimitMB * 1024 * 1024 // Convert MB to Bytes
@@ -33,16 +42,43 @@ class ThumbnailManager: ObservableObject {
     /// - Parameter url: The URL of the image.
     /// - Returns: The cached NSImage or nil if not found.
     func getThumbnail(for url: URL) -> NSImage? {
-        return thumbnailCache.object(forKey: url as NSURL)
+        // 1. Check in-memory NSCache
+        if let cachedImage = thumbnailCache.object(forKey: url as NSURL) {
+            logger.trace("Thumbnail for \(url.lastPathComponent) found in NSCache (memory).")
+            return cachedImage
+        }
+        
+        // 2. Check file cache if enabled
+        if appSettings.enableThumbnailFileCache {
+            if let fileData = fileCacheManager.loadThumbnailData(for: url) {
+                if let image = NSImage(data: fileData) {
+                    logger.debug("Thumbnail for \(url.lastPathComponent) loaded from file cache, adding to NSCache.")
+                    // Add to in-memory cache for faster subsequent access
+                    let cost = image.tiffRepresentation?.count ?? 0 // Approximate cost
+                    thumbnailCache.setObject(image, forKey: url as NSURL, cost: cost)
+                    return image
+                } else {
+                    logger.warning("Could not create NSImage from file cached data for \(url.lastPathComponent). File might be corrupt.")
+                    // Optionally remove the corrupt file
+                    fileCacheManager.removeThumbnail(for: url)
+                }
+            }
+        }
+        
+        logger.trace("Thumbnail for \(url.lastPathComponent) not found in any cache.")
+        return nil // Not found in any cache
     }
     
     /// Clears the thumbnail cache and resets the generation queue.
     func resetCacheAndQueue() {
-        logger.info("Clearing thumbnail cache and resetting queue.")
-        thumbnailCache.removeAllObjects()
+        logger.info("Clearing in-memory thumbnail cache and resetting queue.")
+        thumbnailCache.removeAllObjects() // Clear only the in-memory NSCache
+        // DO NOT clear the fileCacheManager.clearCache() here.
+        // The file cache is persistent and managed by size limits.
+        
         isLoadingThumbnail.removeAll()
         thumbnailGenerationQueue.removeAll()
-        storedAdjustments.removeAll() // Clear stored adjustments too
+        storedAdjustments.removeAll() // Clear stored adjustments for the new set
         activeThumbnailTasksCount = 0
         // Note: This doesn't cancel in-flight tasks, but prevents new ones from starting
         // and clears the state for subsequent operations.
@@ -145,7 +181,12 @@ class ThumbnailManager: ObservableObject {
         let cost = cgImg.height * cgImg.bytesPerRow
         // Store in NSCache using NSURL as key and calculated cost
         self.thumbnailCache.setObject(nsImage, forKey: url as NSURL, cost: cost)
-        self.logger.debug("Successfully generated and cached thumbnail for \(url.lastPathComponent) with cost \(cost) bytes")
+        self.logger.debug("Successfully generated and cached thumbnail for \(url.lastPathComponent) in NSCache with cost \(cost) bytes")
+        
+        // Also save to file cache if enabled
+        if appSettings.enableThumbnailFileCache {
+            fileCacheManager.saveThumbnail(nsImage, for: url)
+        }
         #else
         // Placeholder for potential future iOS/visionOS support
         // self.thumbnailCache.setObject(UIImage(cgImage: cgImg), forKey: url as NSURL, cost: cost)
@@ -172,6 +213,9 @@ class ThumbnailManager: ObservableObject {
         logger.info("Requesting thumbnail regeneration for \(url.lastPathComponent) with updated adjustments.")
         // Remove from cache
         thumbnailCache.removeObject(forKey: url as NSURL)
+        if appSettings.enableThumbnailFileCache {
+            fileCacheManager.removeThumbnail(for: url) // Remove from file cache too
+        }
         // Update stored adjustments
         storedAdjustments[url] = adjustments
         // Mark as not loading (if it was) to allow re-queueing

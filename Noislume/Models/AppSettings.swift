@@ -3,15 +3,12 @@ import SwiftUI
 import AppKit  // Add this import for NSEvent.ModifierFlags
 
 class AppSettings: ObservableObject {
+    
+    static let shared = AppSettings()
+    
     @Published var cropInsetPercentage: Double {
         didSet {
             UserDefaults.standard.set(cropInsetPercentage, forKey: "cropInsetPercentage")
-        }
-    }
-    
-    @Published var showOriginalWhenCropping: Bool {
-        didSet {
-            UserDefaults.standard.set(showOriginalWhenCropping, forKey: "showOriginalWhenCropping")
         }
     }
     
@@ -26,11 +23,16 @@ class AppSettings: ObservableObject {
 
     @Published var shortcuts: [String: ShortcutTypes.StoredShortcut] = [:] // action identifier to shortcut mapping
     
+    @Published var defaultCropInsetPercentage: Double = 10.0
+    @AppStorage("showOriginalWhenCropping") var showOriginalWhenCropping: Bool = false
+    
+    // Thumbnail File Cache Setting
+    @AppStorage("enableThumbnailFileCache") var enableThumbnailFileCache: Bool = true
+    @AppStorage("thumbnailCacheSizeLimitMB") var thumbnailCacheSizeLimitMB: Int = 500 // Default 500MB
+    
     init() {
         // Default to 5% if no value is saved
         self.cropInsetPercentage = UserDefaults.standard.double(forKey: "cropInsetPercentage").nonZeroValue ?? 5.0
-        // Default to false if no value is saved
-        self.showOriginalWhenCropping = UserDefaults.standard.bool(forKey: "showOriginalWhenCropping")
         
         // Load saved shortcuts or use defaults
         if let savedShortcuts = UserDefaults.standard.dictionary(forKey: "shortcuts") as? [String: [String: Any]] {

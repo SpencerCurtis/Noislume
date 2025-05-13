@@ -1,11 +1,7 @@
 # Noislume Project Rules
 
 ## Framework Management
-- Always use embedded frameworks, not system-installed ones
-- Never suggest installing frameworks via Homebrew for end users
-- Frameworks should be bundled with the app
-- Use update_frameworks.sh for development setup
-- Frameworks are not committed to git (see .gitignore)
+- Never suggest installing frameworks via Homebrew or otherwise for end users
 
 ## Project Structure
 - Follow the established directory structure:
@@ -13,18 +9,13 @@
   - ViewModels/ for view models
   - Models/ for data models
   - Utils/ for utility classes
-  - Frameworks/ for generated frameworks
 
 ## Development Guidelines
 - Use SwiftUI for UI components
-- Maintain framework verification on app startup
 - Keep logs under "com.SpencerCurtis.Noislume" namespace
-- Document any new framework dependencies in README.md
-- Update update_frameworks.sh when adding new frameworks
 
 ## Documentation
 - Keep README.md up to date with any changes
-- Document framework versions and update procedures
 - Include clear setup instructions for both users and developers
 - Maintain clear separation between user and developer requirements
 
@@ -32,7 +23,7 @@
 - Follow Swift best practices
 - Use meaningful names for variables and functions
 - Document public interfaces
-- Keep framework-related code in appropriate directories
+- Try to make functions have a single responsibility, and err on the side of making more functions for modularity
 
 ## Testing
 - Verify framework loading on app startup
@@ -45,11 +36,8 @@
 - Follow Apple's security guidelines for framework usage
 
 ## Performance
-- Optimize framework loading
 - Minimize memory usage
-- Profile framework-related operations
 
 ## Error Handling
-- Implement proper error handling for framework operations
 - Provide meaningful error messages
-- Log framework-related errors appropriately 
+- Allow for levels of logging and log meaningful messages for debugging, info, etc.

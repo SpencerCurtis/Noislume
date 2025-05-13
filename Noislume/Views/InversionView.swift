@@ -18,20 +18,26 @@ struct InversionView: View {
     }
     
     var body: some View {
-        HStack(spacing: 0) {
-            CroppingView(
-                viewModel: viewModel,
-                showCropOverlay: $showCropOverlay,
-                showFileImporter: $showFileImporter
-            )
-                .frame(maxWidth: .infinity)
-            
-            EditingSidebar(
-                viewModel: viewModel,
-                showFileImporter: $showFileImporter,
-                showExporter: $showExporter,
-                showCropOverlay: $showCropOverlay
-            )
+        VStack(spacing: 0) {
+            HStack(spacing: 0) {
+                CroppingView(
+                    viewModel: viewModel,
+                    showCropOverlay: $showCropOverlay,
+                    showFileImporter: $showFileImporter
+                )
+                    .frame(maxWidth: .infinity)
+                
+                EditingSidebar(
+                    viewModel: viewModel,
+                    showFileImporter: $showFileImporter,
+                    showExporter: $showExporter,
+                    showCropOverlay: $showCropOverlay
+                )
+            }
+            .layoutPriority(1)
+            if viewModel.hasImage {
+                FilmStripView(viewModel: viewModel)
+            }
         }
         .onAppear {
             setupNotifications()
@@ -42,13 +48,11 @@ struct InversionView: View {
         .fileImporter(
             isPresented: $showFileImporter,
             allowedContentTypes: [.rawImage],
-            allowsMultipleSelection: false
+            allowsMultipleSelection: true
         ) { result in
             switch result {
             case .success(let urls):
-                if let url = urls.first {
-                    viewModel.loadRawFile(url)
-                }
+                viewModel.loadInitialImageSet(urls: urls)
             case .failure(let error):
                 viewModel.errorMessage = error.localizedDescription
             }
@@ -73,7 +77,6 @@ struct InversionView: View {
     }
     
     private func setupNotifications() {
-        // Open File
         NotificationCenter.default.addObserver(
             forName: .openFile,
             object: nil,
@@ -82,7 +85,6 @@ struct InversionView: View {
             showFileImporter = true
         }
         
-        // Save File
         NotificationCenter.default.addObserver(
             forName: .saveFile,
             object: nil,
@@ -91,7 +93,6 @@ struct InversionView: View {
             showExporter = true
         }
         
-        // Toggle Crop
         NotificationCenter.default.addObserver(
             forName: .toggleCrop,
             object: nil,
@@ -100,7 +101,6 @@ struct InversionView: View {
             showCropOverlay.toggle()
         }
         
-        // Reset Adjustments
         NotificationCenter.default.addObserver(
             forName: .resetAdjustments,
             object: nil,
@@ -108,6 +108,7 @@ struct InversionView: View {
         ) { [viewModel] _ in
             Task { @MainActor in
                 viewModel.imageModel.adjustments = .init()
+                await viewModel.processImage()
             }
         }
     }

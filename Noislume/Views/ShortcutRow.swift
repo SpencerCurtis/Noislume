@@ -10,6 +10,7 @@ struct ShortcutRow: View {
         HStack(spacing: 8) {
             Text(label)
                 .foregroundStyle(.primary)
+            
             Spacer()
             if isRecording {
                 Text("Recording...")

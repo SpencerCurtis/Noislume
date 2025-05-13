@@ -1,5 +1,3 @@
-
-
 import AppKit
 
 // Namespace everything in an enum to avoid conflicts
@@ -16,6 +14,15 @@ enum ShortcutTypes {
     struct StoredShortcut: Codable {
         let key: String
         let modifierFlags: UInt // NSEvent.ModifierFlags.rawValue
+        let isGlobal: Bool // New property
+
+        // Provide a default value for isGlobal for existing Codable data
+        // and for easier initialization.
+        init(key: String, modifierFlags: UInt, isGlobal: Bool = false) {
+            self.key = key
+            self.modifierFlags = modifierFlags
+            self.isGlobal = isGlobal
+        }
     }
 }
 

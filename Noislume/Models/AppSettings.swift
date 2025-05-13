@@ -13,12 +13,12 @@ class AppSettings: ObservableObject {
     }
     
     // Define default shortcuts
-    static let defaultShortcuts: [String: (key: String, modifiers: NSEvent.ModifierFlags)] = [
-        "openFileAction": ("o", .command),
-        "saveFileAction": ("s", .command),
-        "toggleCropAction": ("c", .command),
-        "resetAdjustmentsAction": ("r", [.command, .shift])
-        // Add more default shortcuts as needed
+    static let defaultShortcuts: [String: (key: String, modifiers: NSEvent.ModifierFlags, isGlobal: Bool)] = [
+        "openFileAction": ("o", .command, false),
+        "saveFileAction": ("s", .command, false),
+        "toggleCropAction": ("c", .command, false),
+        "resetAdjustmentsAction": ("r", [.command, .shift], false) 
+        // Add more default shortcuts as needed, specifying their isGlobal status
     ]
 
     @Published var shortcuts: [String: ShortcutTypes.StoredShortcut] = [:] // action identifier to shortcut mapping
@@ -40,9 +40,11 @@ class AppSettings: ObservableObject {
             for (actionId, shortcutData) in savedShortcuts {
                 if let key = shortcutData["key"] as? String,
                    let modifierFlags = shortcutData["modifierFlags"] as? UInt {
+                    let isGlobal = shortcutData["isGlobal"] as? Bool ?? false // Handle missing isGlobal for older data
                     shortcuts[actionId] = ShortcutTypes.StoredShortcut(
                         key: key,
-                        modifierFlags: modifierFlags
+                        modifierFlags: modifierFlags,
+                        isGlobal: isGlobal
                     )
                 }
             }
@@ -53,7 +55,8 @@ class AppSettings: ObservableObject {
             if shortcuts[actionId] == nil {
                 shortcuts[actionId] = ShortcutTypes.StoredShortcut(
                     key: defaultShortcut.key,
-                    modifierFlags: defaultShortcut.modifiers.rawValue
+                    modifierFlags: defaultShortcut.modifiers.rawValue,
+                    isGlobal: defaultShortcut.isGlobal
                 )
             }
         }
@@ -62,10 +65,13 @@ class AppSettings: ObservableObject {
         saveShortcuts()
     }
     
-    func updateShortcut(forAction actionId: String, shortcut: ShortcutTypes.RecordedShortcutData) {
+    func updateShortcut(forAction actionId: String, shortcut: ShortcutTypes.RecordedShortcutData, isGlobal: Bool? = nil) {
+        // If isGlobal is not specified, retain the existing value or default to false if creating new.
+        let currentIsGlobal = shortcuts[actionId]?.isGlobal ?? (Self.defaultShortcuts[actionId]?.isGlobal ?? false)
         shortcuts[actionId] = ShortcutTypes.StoredShortcut(
             key: shortcut.key,
-            modifierFlags: shortcut.modifiers.rawValue
+            modifierFlags: shortcut.modifiers.rawValue,
+            isGlobal: isGlobal ?? currentIsGlobal // Use provided isGlobal or retain existing/default
         )
         saveShortcuts()
     }
@@ -83,7 +89,8 @@ class AppSettings: ObservableObject {
         if let defaultShortcut = Self.defaultShortcuts[actionId] {
             shortcuts[actionId] = ShortcutTypes.StoredShortcut(
                 key: defaultShortcut.key,
-                modifierFlags: defaultShortcut.modifiers.rawValue
+                modifierFlags: defaultShortcut.modifiers.rawValue,
+                isGlobal: defaultShortcut.isGlobal
             )
             saveShortcuts()
         }
@@ -95,7 +102,8 @@ class AppSettings: ObservableObject {
         for (actionId, defaultShortcut) in Self.defaultShortcuts {
             shortcuts[actionId] = ShortcutTypes.StoredShortcut(
                 key: defaultShortcut.key,
-                modifierFlags: defaultShortcut.modifiers.rawValue
+                modifierFlags: defaultShortcut.modifiers.rawValue,
+                isGlobal: defaultShortcut.isGlobal
             )
         }
         saveShortcuts()
@@ -106,7 +114,8 @@ class AppSettings: ObservableObject {
         for (id, shortcut) in shortcuts {
             storedShortcuts[id] = [
                 "key": shortcut.key,
-                "modifierFlags": shortcut.modifierFlags
+                "modifierFlags": shortcut.modifierFlags,
+                "isGlobal": shortcut.isGlobal // Save the new flag
             ]
         }
         UserDefaults.standard.set(storedShortcuts, forKey: "shortcuts")

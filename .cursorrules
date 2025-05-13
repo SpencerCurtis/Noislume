@@ -41,3 +41,50 @@
 ## Error Handling
 - Provide meaningful error messages
 - Allow for levels of logging and log meaningful messages for debugging, info, etc.
+
+# Project Overview & Key Components (Learned by AI Assistant)
+
+## Core Purpose
+- Noislume is a macOS application for RAW image editing, with a primary focus on film negative inversion.
+- It enables non-destructive editing by saving adjustments on a per-image basis.
+
+## Key Technologies & Patterns
+- **UI:** SwiftUI (located in `Noislume/Views/`, e.g., `ContentView.swift`, `InversionView.swift`)
+- **Architecture:** Model-View-ViewModel (MVVM) is strictly followed.
+- **Image Processing:** Core Image (utilizing system `CIRAWFilter` for RAW decoding and a custom filter chain).
+- **Concurrency:** Swift Concurrency (`async/await`, `actor` for `CoreImageProcessor`).
+- **Logging:** `os.log` with the subsystem "com.SpencerCurtis.Noislume".
+
+## Directory Structure Highlights
+- `Noislume/Views/`: SwiftUI Views
+- `Noislume/ViewModels/`: ViewModels (e.g., `InversionViewModel.swift`)
+- `Noislume/Models/`: Data models (e.g., `ImageAdjustments.swift`, `ImageState.swift`, `AppSettings.swift`)
+- `Noislume/Models/Filters/`: Contains the `ImageFilter` protocol and concrete filter implementations.
+- `Noislume/Utils/`: Utility classes (e.g., `CoreImageProcessor.swift`, `PersistenceManager.swift`, `ThumbnailManager.swift`, `MainMenuManager.swift`, `KeyboardShortcutManager.swift`).
+- `Noislume/Commands/`: SwiftUI `Commands` for menu integration (e.g., `AppCommands.swift`).
+
+## Central Components & Their Roles
+- **`InversionViewModel.swift`**: Manages the state and logic for the main image editing interface (`InversionView`). Orchestrates image loading, processing, and adjustment application.
+- **`CoreImageProcessor.swift`**: An `actor` responsible for the actual image processing pipeline. Uses `CIRAWFilter` for RAW files and applies a sequence of `ImageFilter`s.
+- **`ImageAdjustments.swift`**: A `Codable` struct holding a comprehensive set of parameters for image manipulation (exposure, color, crop, geometry, etc.).
+- **`ImageState.swift`**: A `Codable` struct that wraps `ImageAdjustments` and the image URL. Instances are saved individually for each image by `PersistenceManager`.
+- **`PersistenceManager.swift`**: Handles saving and loading of `ImageState` objects to/from individual JSON files in the Application Support directory (using hashed filenames derived from image URLs).
+- **`ThumbnailManager.swift` & `ThumbnailCacheManager.swift`**: Manage the generation, display, and disk/memory caching of image thumbnails. Thumbnails can reflect current adjustments.
+- **`AppSettings.swift`**: A singleton managing global application settings (e.g., crop defaults, thumbnail cache preferences, keyboard shortcuts) persisted via `UserDefaults` and `@AppStorage`.
+- **`ImageFilter` protocol (`Models/Filters/ImageFilter.swift`)**: Defines the contract for individual image processing filters (e.g., inversion, tone, geometry) applied by `CoreImageProcessor`.
+- **`MainMenuManager.swift`**: Constructs and manages the main application menu (AppKit `NSMenu`) and updates shortcuts based on `AppSettings`.
+- **`KeyboardShortcutManager.swift`**: Manages and persists SwiftUI-specific keyboard shortcuts (used with `.keyboardShortcut` modifier) via `UserDefaults`.
+
+## Notable Features & Conventions
+- **Non-Destructive Editing:** Achieved by saving `ImageState` (with all `ImageAdjustments`) separately for each image.
+- **Extensive Image Adjustments:** Supports a wide range of editing parameters detailed in `ImageAdjustments.swift`.
+- **RAW File Focus:** Primarily designed for RAW image files, leveraging `CIRAWFilter`.
+- **Dual Shortcut Management Systems:**
+    - AppKit/`MainMenuManager` uses `AppSettings` for menu shortcuts (employing `NSEvent.ModifierFlags`).
+    - SwiftUI/`AppCommands` uses `KeyboardShortcutManager` for view-based shortcuts (employing SwiftUI's `KeyboardShortcut` and `EventModifiers`). `KeyboardShortcutManager` has its own `UserDefaults` persistence. This is a known characteristic and potential area for future unification.
+- **Frameworks:** Relies on system frameworks (Core Image for RAW processing), no bundled/external frameworks are currently used for core image processing.
+- **Filter Chain:** `CoreImageProcessor` uses a defined order of filters (Geometry -> Inversion -> Tone & Contrast).
+
+## General Direction
+- The application is a capable RAW image editor with a sophisticated non-destructive workflow, per-image adjustment persistence, and advanced thumbnail handling.
+- There's an emphasis on clear separation of concerns and the adoption of modern Swift features (SwiftUI, Swift Concurrency).

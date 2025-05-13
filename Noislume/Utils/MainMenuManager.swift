@@ -90,8 +90,15 @@ class MainMenuManager {
         let fileMenu = NSMenu(title: "File")
         fileMenuItem.submenu = fileMenu
 
-        addItem(to: fileMenu, title: "Open...", action: #selector(AppDelegate.handleOpenFile), keyEquivalent: "o")
-        addItem(to: fileMenu, title: "Save...", action: #selector(AppDelegate.handleSaveFile), keyEquivalent: "s")
+        let openActionDefault = AppSettings.defaultShortcuts["openFileAction"]!
+        let openFallback = ShortcutTypes.RecordedShortcutData(key: openActionDefault.key, modifiers: openActionDefault.modifiers)
+        let openShortcut = settings.getShortcut(forAction: "openFileAction") ?? openFallback
+        addItem(to: fileMenu, title: "Open...", action: #selector(AppDelegate.handleOpenFile), keyEquivalent: openShortcut.key, keyEquivalentModifierMask: openShortcut.modifiers)
+        
+        let saveActionDefault = AppSettings.defaultShortcuts["saveFileAction"]!
+        let saveFallback = ShortcutTypes.RecordedShortcutData(key: saveActionDefault.key, modifiers: saveActionDefault.modifiers)
+        let saveShortcut = settings.getShortcut(forAction: "saveFileAction") ?? saveFallback
+        addItem(to: fileMenu, title: "Save...", action: #selector(AppDelegate.handleSaveFile), keyEquivalent: saveShortcut.key, keyEquivalentModifierMask: saveShortcut.modifiers)
         
         return fileMenuItem
     }
@@ -104,8 +111,16 @@ class MainMenuManager {
         addItem(to: editMenu, title: "Undo", action: Selector(("undo:")), keyEquivalent: "z", keyEquivalentModifierMask: .command)
         addItem(to: editMenu, title: "Redo", action: Selector(("redo:")), keyEquivalent: "z", keyEquivalentModifierMask: [.command, .shift])
         addSeparator(to: editMenu)
-        addItem(to: editMenu, title: "Toggle Crop", action: #selector(AppDelegate.handleToggleCrop), keyEquivalent: "k")
-        addItem(to: editMenu, title: "Reset Adjustments", action: #selector(AppDelegate.handleResetAdjustments), keyEquivalent: "r")
+        
+        let toggleCropActionDefault = AppSettings.defaultShortcuts["toggleCropAction"]!
+        let toggleCropFallback = ShortcutTypes.RecordedShortcutData(key: toggleCropActionDefault.key, modifiers: toggleCropActionDefault.modifiers)
+        let toggleCropShortcut = settings.getShortcut(forAction: "toggleCropAction") ?? toggleCropFallback
+        addItem(to: editMenu, title: "Toggle Crop", action: #selector(AppDelegate.handleToggleCrop), keyEquivalent: toggleCropShortcut.key, keyEquivalentModifierMask: toggleCropShortcut.modifiers)
+        
+        let resetAdjustmentsActionDefault = AppSettings.defaultShortcuts["resetAdjustmentsAction"]!
+        let resetAdjustmentsFallback = ShortcutTypes.RecordedShortcutData(key: resetAdjustmentsActionDefault.key, modifiers: resetAdjustmentsActionDefault.modifiers)
+        let resetAdjustmentsShortcut = settings.getShortcut(forAction: "resetAdjustmentsAction") ?? resetAdjustmentsFallback
+        addItem(to: editMenu, title: "Reset Adjustments", action: #selector(AppDelegate.handleResetAdjustments), keyEquivalent: resetAdjustmentsShortcut.key, keyEquivalentModifierMask: resetAdjustmentsShortcut.modifiers)
 
         return editMenuItem
     }

@@ -7,6 +7,16 @@ struct ShortcutsSettingsView: View {
     @StateObject private var shortcutService = ShortcutRecorderService.shared
     @State private var actionBeingRecorded: String? = nil
     
+    // Helper to get the current StoredShortcut from AppSettings
+    private func getStoredShortcut(for actionId: String) -> ShortcutTypes.StoredShortcut? {
+        return settings.shortcuts[actionId]
+    }
+    
+    // Helper to get the current RecordedShortcutData (for display) from AppSettings
+    private func getRecordedShortcutData(for actionId: String) -> ShortcutTypes.RecordedShortcutData? {
+        return settings.getShortcut(forAction: actionId)
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
             VStack(alignment: .leading, spacing: 12) {
@@ -16,14 +26,14 @@ struct ShortcutsSettingsView: View {
                 VStack(spacing: 12) {
                     ShortcutRow(
                         label: "Open File:",
-                        currentShortcut: settings.getShortcut(forAction: "openFileAction"),
+                        currentShortcut: getRecordedShortcutData(for: "openFileAction"),
                         isRecording: shortcutService.isRecording && actionBeingRecorded == "openFileAction",
                         action: { handleShortcutRecording(for: "openFileAction") }
                     )
                     
                     ShortcutRow(
                         label: "Save File:",
-                        currentShortcut: settings.getShortcut(forAction: "saveFileAction"),
+                        currentShortcut: getRecordedShortcutData(for: "saveFileAction"),
                         isRecording: shortcutService.isRecording && actionBeingRecorded == "saveFileAction",
                         action: { handleShortcutRecording(for: "saveFileAction") }
                     )
@@ -38,14 +48,14 @@ struct ShortcutsSettingsView: View {
                 VStack(spacing: 12) {
                     ShortcutRow(
                         label: "Toggle Crop:",
-                        currentShortcut: settings.getShortcut(forAction: "toggleCropAction"),
+                        currentShortcut: getRecordedShortcutData(for: "toggleCropAction"),
                         isRecording: shortcutService.isRecording && actionBeingRecorded == "toggleCropAction",
                         action: { handleShortcutRecording(for: "toggleCropAction") }
                     )
                     
                     ShortcutRow(
                         label: "Reset Adjustments:",
-                        currentShortcut: settings.getShortcut(forAction: "resetAdjustmentsAction"),
+                        currentShortcut: getRecordedShortcutData(for: "resetAdjustmentsAction"),
                         isRecording: shortcutService.isRecording && actionBeingRecorded == "resetAdjustmentsAction",
                         action: { handleShortcutRecording(for: "resetAdjustmentsAction") }
                     )

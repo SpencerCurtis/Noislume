@@ -23,9 +23,63 @@ public class CustomApplication: NSApplication, NSApplicationDelegate {
                 return // Consume event if recording shortcut
             }
 
-            closeSettingsWindowIfOpen(event: event)
+            // Global shortcut interception for shortcuts marked isGlobal = true
+            if !event.isARepeat { // Optional: ignore key repeats for global shortcuts
+                let appSettingsShortcuts = AppSettings.shared.shortcuts
+                let currentKey = event.charactersIgnoringModifiers?.lowercased() ?? ""
+                let currentModifiers = event.modifierFlags
+
+                for (actionId, storedShortcut) in appSettingsShortcuts {
+                    if storedShortcut.isGlobal {
+                        let targetKey = storedShortcut.key.lowercased()
+                        // Ensure targetKey is not empty before comparison
+                        if targetKey.isEmpty { continue }
+                        
+                        let targetModifiers = NSEvent.ModifierFlags(rawValue: storedShortcut.modifierFlags)
+
+                        // Exact match: key must be same, and modifiers must be exactly the same set.
+                        if currentKey == targetKey && currentModifiers == targetModifiers {
+                            if dispatchApplicationAction(for: actionId) {
+                                // print("Global shortcut \"\(actionId)\" intercepted and handled.")
+                                return // Consume the event
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Existing specific logic (e.g., Cmd+W for settings window)
+            // This can remain if it's not covered by a global shortcut, or be migrated to AppSettings if desired.
+            closeSettingsWindowIfOpen(event: event) // This might need to be re-evaluated. If Cmd+W is made a global shortcut, it would be handled above.
         }
-        super.sendEvent(event)
+        super.sendEvent(event) // If no global shortcut consumed, or not a keyDown event, pass to standard handling
+    }
+    
+    // Helper to dispatch actions for global shortcuts
+    // Returns true if action was known and dispatched, false otherwise
+    private func dispatchApplicationAction(for actionId: String) -> Bool {
+        switch actionId {
+        case "openFileAction":
+            NotificationCenter.default.post(name: .openFile, object: nil)
+            return true
+        case "saveFileAction":
+            NotificationCenter.default.post(name: .saveFile, object: nil)
+            return true
+        case "toggleCropAction":
+            NotificationCenter.default.post(name: .toggleCrop, object: nil)
+            return true
+        case "resetAdjustmentsAction":
+            NotificationCenter.default.post(name: .resetAdjustments, object: nil)
+            return true
+        // Add cases for any other actions that can be globally intercepted
+        // e.g., a hypothetical "toggleFocusModeAction"
+        // case "toggleFocusModeAction":
+        //     NotificationCenter.default.post(name: .toggleFocusMode, object: nil)
+        //     return true
+        default:
+            print("Warning: Global shortcut intercepted for unhandled actionId: \(actionId)")
+            return false // Action not recognized by the global dispatcher
+        }
     }
     
     public static var sharedCustom: CustomApplication? {

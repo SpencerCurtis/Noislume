@@ -20,6 +20,26 @@ struct ImageAdjustments: Codable {
     var isBlackAndWhite: Bool = false
     var sepiaIntensity: Float = 0
     
+    // Positive Color Grading (New)
+    var positiveTemperature: Float = 6500
+    var positiveTint: Float = 0
+    var positiveVibrance: Float = 0
+    var positiveSaturation: Float = 1
+    
+    // B&W Mixer Controls (New)
+    var bwRedContribution: Float = 0.299
+    var bwGreenContribution: Float = 0.587
+    var bwBlueContribution: Float = 0.114
+    
+    // Film Base Sampling (New)
+    var filmBaseSamplePointX: CGFloat?
+    var filmBaseSamplePointY: CGFloat?
+    
+    var sampledFilmBaseColorR: CGFloat?
+    var sampledFilmBaseColorG: CGFloat?
+    var sampledFilmBaseColorB: CGFloat?
+    var sampledFilmBaseColorA: CGFloat?
+    
     // Sharpening & Noise
     var sharpness: Float = 0
     var luminanceNoise: Float = 0
@@ -64,6 +84,36 @@ struct ImageAdjustments: Codable {
     var unsharpMaskRadius: Float = 2.5
     var unsharpMaskIntensity: Float = 0.5
     
+    // Computed property for filmBaseSamplePoint
+    var filmBaseSamplePoint: CGPoint? {
+        get {
+            if let x = filmBaseSamplePointX, let y = filmBaseSamplePointY {
+                return CGPoint(x: x, y: y)
+            }
+            return nil
+        }
+        set {
+            filmBaseSamplePointX = newValue?.x
+            filmBaseSamplePointY = newValue?.y
+        }
+    }
+
+    // Computed property for sampledFilmBaseColor
+    var sampledFilmBaseColor: CIColor? {
+        get {
+            if let r = sampledFilmBaseColorR, let g = sampledFilmBaseColorG, let b = sampledFilmBaseColorB, let a = sampledFilmBaseColorA {
+                return CIColor(red: r, green: g, blue: b, alpha: a)
+            }
+            return nil
+        }
+        set {
+            sampledFilmBaseColorR = newValue?.red
+            sampledFilmBaseColorG = newValue?.green
+            sampledFilmBaseColorB = newValue?.blue
+            sampledFilmBaseColorA = newValue?.alpha
+        }
+    }
+    
     struct PerspectiveCorrection: Codable {
         var points: [CGPoint]
         var originalImageSize: CGSize
@@ -88,6 +138,20 @@ struct ImageAdjustments: Codable {
          saturation: Float = 1.1,     // Slight saturation boost
          isBlackAndWhite: Bool = false,
          sepiaIntensity: Float = 0,
+         positiveTemperature: Float = 6500,
+         positiveTint: Float = 0,
+         positiveVibrance: Float = 0,
+         positiveSaturation: Float = 1,
+         bwRedContribution: Float = 0.299,
+         bwGreenContribution: Float = 0.587,
+         bwBlueContribution: Float = 0.114,
+         // Film Base Sampling
+         filmBaseSamplePointX: CGFloat? = nil,
+         filmBaseSamplePointY: CGFloat? = nil,
+         sampledFilmBaseColorR: CGFloat? = nil,
+         sampledFilmBaseColorG: CGFloat? = nil,
+         sampledFilmBaseColorB: CGFloat? = nil,
+         sampledFilmBaseColorA: CGFloat? = nil,
          sharpness: Float = 0,
          luminanceNoise: Float = 0,
          noiseReduction: Float = 0,
@@ -121,6 +185,20 @@ struct ImageAdjustments: Codable {
         self.saturation = saturation
         self.isBlackAndWhite = isBlackAndWhite
         self.sepiaIntensity = sepiaIntensity
+        self.positiveTemperature = positiveTemperature
+        self.positiveTint = positiveTint
+        self.positiveVibrance = positiveVibrance
+        self.positiveSaturation = positiveSaturation
+        self.bwRedContribution = bwRedContribution
+        self.bwGreenContribution = bwGreenContribution
+        self.bwBlueContribution = bwBlueContribution
+        // Film Base Sampling
+        self.filmBaseSamplePointX = filmBaseSamplePointX
+        self.filmBaseSamplePointY = filmBaseSamplePointY
+        self.sampledFilmBaseColorR = sampledFilmBaseColorR
+        self.sampledFilmBaseColorG = sampledFilmBaseColorG
+        self.sampledFilmBaseColorB = sampledFilmBaseColorB
+        self.sampledFilmBaseColorA = sampledFilmBaseColorA
         self.sharpness = sharpness
         self.luminanceNoise = luminanceNoise
         self.noiseReduction = noiseReduction
@@ -157,6 +235,20 @@ struct ImageAdjustments: Codable {
         saturation = 1.1
         isBlackAndWhite = false
         sepiaIntensity = 0
+        positiveTemperature = 6500
+        positiveTint = 0
+        positiveVibrance = 0
+        positiveSaturation = 1
+        bwRedContribution = 0.299
+        bwGreenContribution = 0.587
+        bwBlueContribution = 0.114
+        // Film Base Sampling
+        filmBaseSamplePointX = nil
+        filmBaseSamplePointY = nil
+        sampledFilmBaseColorR = nil
+        sampledFilmBaseColorG = nil
+        sampledFilmBaseColorB = nil
+        sampledFilmBaseColorA = nil
         sharpness = 0
         luminanceNoise = 0
         noiseReduction = 0
@@ -186,6 +278,8 @@ struct ImageAdjustments: Codable {
         case exposure, contrast, brightness, gamma, highlights, shadows
         case temperature, tint, vibrance, saturation
         case isBlackAndWhite, sepiaIntensity
+        case positiveTemperature, positiveTint, positiveVibrance, positiveSaturation
+        case bwRedContribution, bwGreenContribution, bwBlueContribution
         case sharpness, luminanceNoise, noiseReduction
         case straightenAngle, vignetteIntensity, vignetteRadius
         case cropRect, rotation, scale
@@ -194,6 +288,8 @@ struct ImageAdjustments: Codable {
         case redPolynomial, greenPolynomial, bluePolynomial
         case unsharpMaskRadius, unsharpMaskIntensity
         case perspectiveCorrection
+        case filmBaseSamplePointX, filmBaseSamplePointY
+        case sampledFilmBaseColorR, sampledFilmBaseColorG, sampledFilmBaseColorB, sampledFilmBaseColorA
     }
     
     // CGRect isn't Codable by default, so we need to handle it
@@ -248,6 +344,23 @@ struct ImageAdjustments: Codable {
         try container.encode(isBlackAndWhite, forKey: .isBlackAndWhite)
         try container.encode(sepiaIntensity, forKey: .sepiaIntensity)
         
+        try container.encode(positiveTemperature, forKey: .positiveTemperature)
+        try container.encode(positiveTint, forKey: .positiveTint)
+        try container.encode(positiveVibrance, forKey: .positiveVibrance)
+        try container.encode(positiveSaturation, forKey: .positiveSaturation)
+        
+        try container.encode(bwRedContribution, forKey: .bwRedContribution)
+        try container.encode(bwGreenContribution, forKey: .bwGreenContribution)
+        try container.encode(bwBlueContribution, forKey: .bwBlueContribution)
+        
+        // Encode Film Base Sampling
+        try container.encodeIfPresent(filmBaseSamplePointX, forKey: .filmBaseSamplePointX)
+        try container.encodeIfPresent(filmBaseSamplePointY, forKey: .filmBaseSamplePointY)
+        try container.encodeIfPresent(sampledFilmBaseColorR, forKey: .sampledFilmBaseColorR)
+        try container.encodeIfPresent(sampledFilmBaseColorG, forKey: .sampledFilmBaseColorG)
+        try container.encodeIfPresent(sampledFilmBaseColorB, forKey: .sampledFilmBaseColorB)
+        try container.encodeIfPresent(sampledFilmBaseColorA, forKey: .sampledFilmBaseColorA)
+        
         try container.encode(sharpness, forKey: .sharpness)
         try container.encode(luminanceNoise, forKey: .luminanceNoise)
         try container.encode(noiseReduction, forKey: .noiseReduction)
@@ -286,50 +399,67 @@ struct ImageAdjustments: Codable {
     public init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         
-        exposure = try container.decode(Float.self, forKey: .exposure)
-        contrast = try container.decode(Float.self, forKey: .contrast)
-        brightness = try container.decode(Float.self, forKey: .brightness)
-        gamma = try container.decode(Float.self, forKey: .gamma)
-        highlights = try container.decode(Float.self, forKey: .highlights)
-        shadows = try container.decode(Float.self, forKey: .shadows)
+        exposure = try container.decodeIfPresent(Float.self, forKey: .exposure) ?? 0
+        contrast = try container.decodeIfPresent(Float.self, forKey: .contrast) ?? 1
+        brightness = try container.decodeIfPresent(Float.self, forKey: .brightness) ?? 0
+        gamma = try container.decodeIfPresent(Float.self, forKey: .gamma) ?? 1
+        highlights = try container.decodeIfPresent(Float.self, forKey: .highlights) ?? 0
+        shadows = try container.decodeIfPresent(Float.self, forKey: .shadows) ?? 0
         
-        temperature = try container.decode(Float.self, forKey: .temperature)
-        tint = try container.decode(Float.self, forKey: .tint)
-        vibrance = try container.decode(Float.self, forKey: .vibrance)
-        saturation = try container.decode(Float.self, forKey: .saturation)
+        temperature = try container.decodeIfPresent(Float.self, forKey: .temperature) ?? 6500
+        tint = try container.decodeIfPresent(Float.self, forKey: .tint) ?? 0
+        vibrance = try container.decodeIfPresent(Float.self, forKey: .vibrance) ?? 0
+        saturation = try container.decodeIfPresent(Float.self, forKey: .saturation) ?? 1
         
-        isBlackAndWhite = try container.decode(Bool.self, forKey: .isBlackAndWhite)
-        sepiaIntensity = try container.decode(Float.self, forKey: .sepiaIntensity)
+        isBlackAndWhite = try container.decodeIfPresent(Bool.self, forKey: .isBlackAndWhite) ?? false
+        sepiaIntensity = try container.decodeIfPresent(Float.self, forKey: .sepiaIntensity) ?? 0
         
-        sharpness = try container.decode(Float.self, forKey: .sharpness)
-        luminanceNoise = try container.decode(Float.self, forKey: .luminanceNoise)
-        noiseReduction = try container.decode(Float.self, forKey: .noiseReduction)
+        positiveTemperature = try container.decodeIfPresent(Float.self, forKey: .positiveTemperature) ?? 6500
+        positiveTint = try container.decodeIfPresent(Float.self, forKey: .positiveTint) ?? 0
+        positiveVibrance = try container.decodeIfPresent(Float.self, forKey: .positiveVibrance) ?? 0
+        positiveSaturation = try container.decodeIfPresent(Float.self, forKey: .positiveSaturation) ?? 1
         
-        straightenAngle = try container.decode(Float.self, forKey: .straightenAngle)
-        vignetteIntensity = try container.decode(Float.self, forKey: .vignetteIntensity)
-        vignetteRadius = try container.decode(Float.self, forKey: .vignetteRadius)
+        bwRedContribution = try container.decodeIfPresent(Float.self, forKey: .bwRedContribution) ?? 0.299
+        bwGreenContribution = try container.decodeIfPresent(Float.self, forKey: .bwGreenContribution) ?? 0.587
+        bwBlueContribution = try container.decodeIfPresent(Float.self, forKey: .bwBlueContribution) ?? 0.114
+        
+        // Decode Film Base Sampling
+        filmBaseSamplePointX = try container.decodeIfPresent(CGFloat.self, forKey: .filmBaseSamplePointX)
+        filmBaseSamplePointY = try container.decodeIfPresent(CGFloat.self, forKey: .filmBaseSamplePointY)
+        sampledFilmBaseColorR = try container.decodeIfPresent(CGFloat.self, forKey: .sampledFilmBaseColorR)
+        sampledFilmBaseColorG = try container.decodeIfPresent(CGFloat.self, forKey: .sampledFilmBaseColorG)
+        sampledFilmBaseColorB = try container.decodeIfPresent(CGFloat.self, forKey: .sampledFilmBaseColorB)
+        sampledFilmBaseColorA = try container.decodeIfPresent(CGFloat.self, forKey: .sampledFilmBaseColorA)
+        
+        sharpness = try container.decodeIfPresent(Float.self, forKey: .sharpness) ?? 0
+        luminanceNoise = try container.decodeIfPresent(Float.self, forKey: .luminanceNoise) ?? 0
+        noiseReduction = try container.decodeIfPresent(Float.self, forKey: .noiseReduction) ?? 0
+        
+        straightenAngle = try container.decodeIfPresent(Float.self, forKey: .straightenAngle) ?? 0
+        vignetteIntensity = try container.decodeIfPresent(Float.self, forKey: .vignetteIntensity) ?? 0
+        vignetteRadius = try container.decodeIfPresent(Float.self, forKey: .vignetteRadius) ?? 1
         
         if let codingRect = try container.decodeIfPresent(CodingRectangle.self, forKey: .cropRect) {
             cropRect = codingRect.rect
         }
         
-        rotation = try container.decode(Float.self, forKey: .rotation)
-        scale = try container.decode(Float.self, forKey: .scale)
+        rotation = try container.decodeIfPresent(Float.self, forKey: .rotation) ?? 0
+        scale = try container.decodeIfPresent(Float.self, forKey: .scale) ?? 1
         
-        whitePointRed = try container.decode(CGFloat.self, forKey: .whitePointRed)
-        whitePointGreen = try container.decode(CGFloat.self, forKey: .whitePointGreen)
-        whitePointBlue = try container.decode(CGFloat.self, forKey: .whitePointBlue)
-        whitePointAlpha = try container.decode(CGFloat.self, forKey: .whitePointAlpha)
+        whitePointRed = try container.decodeIfPresent(CGFloat.self, forKey: .whitePointRed) ?? 1.0
+        whitePointGreen = try container.decodeIfPresent(CGFloat.self, forKey: .whitePointGreen) ?? 1.0
+        whitePointBlue = try container.decodeIfPresent(CGFloat.self, forKey: .whitePointBlue) ?? 1.0
+        whitePointAlpha = try container.decodeIfPresent(CGFloat.self, forKey: .whitePointAlpha) ?? 1.0
         
         lutData = try container.decodeIfPresent(Data.self, forKey: .lutData)
-        lutDimension = try container.decode(Int.self, forKey: .lutDimension)
+        lutDimension = try container.decodeIfPresent(Int.self, forKey: .lutDimension) ?? 64
         
-        redPolynomial = try container.decode([CGFloat].self, forKey: .redPolynomial)
-        greenPolynomial = try container.decode([CGFloat].self, forKey: .greenPolynomial)
-        bluePolynomial = try container.decode([CGFloat].self, forKey: .bluePolynomial)
+        redPolynomial = try container.decodeIfPresent([CGFloat].self, forKey: .redPolynomial) ?? [0, 1, 0, 0]
+        greenPolynomial = try container.decodeIfPresent([CGFloat].self, forKey: .greenPolynomial) ?? [0, 1, 0, 0]
+        bluePolynomial = try container.decodeIfPresent([CGFloat].self, forKey: .bluePolynomial) ?? [0, 1, 0, 0]
         
-        unsharpMaskRadius = try container.decode(Float.self, forKey: .unsharpMaskRadius)
-        unsharpMaskIntensity = try container.decode(Float.self, forKey: .unsharpMaskIntensity)
+        unsharpMaskRadius = try container.decodeIfPresent(Float.self, forKey: .unsharpMaskRadius) ?? 2.5
+        unsharpMaskIntensity = try container.decodeIfPresent(Float.self, forKey: .unsharpMaskIntensity) ?? 0.5
         
         perspectiveCorrection = try container.decodeIfPresent(PerspectiveCorrection.self, forKey: .perspectiveCorrection)
     }

@@ -20,7 +20,6 @@ struct CroppingView: View {
     @Binding var showFileImporter: Bool
     
     @State private var cornerPoints: [CGPoint] = []
-    @State private var storedPerspectiveCorrection: ImageAdjustments.PerspectiveCorrection? = nil
     
     @State private var hoveredCornerIndex: Int? = nil
     @State private var hoveredEdgeIndex: Int? = nil
@@ -34,12 +33,11 @@ struct CroppingView: View {
     private let logger = Logger(subsystem: "com.SpencerCurtis.Noislume", category: "CroppingView")
     private let cropCoordinateSpaceName = "CropCoordinateSpace"
     private static let ciContext = CIContext()
-    private let cornerHoverSubject = PassthroughSubject<Int?, Never>()
-    private let edgeHoverSubject = PassthroughSubject<Int?, Never>()
-    private let areaHoverSubject = PassthroughSubject<Bool, Never>()
 
     private func createImage(from ciImage: CIImage) -> Image? {
-        guard let cgImage = CroppingView.ciContext.createCGImage(ciImage, from: ciImage.extent) else { return nil }
+        guard let cgImage = CroppingView.ciContext.createCGImage(ciImage, from: ciImage.extent) else {
+            return nil
+        }
         #if os(macOS)
         return Image(nsImage: NSImage(cgImage: cgImage, size: .zero))
         #else
@@ -51,6 +49,13 @@ struct CroppingView: View {
         let percentage = settings.cropInsetPercentage / 100.0
         let insetX = frame.width * percentage
         let insetY = frame.height * percentage
+        
+        guard frame.width > 0, frame.height > 0 else {
+            cornerPoints = [
+                .zero, .zero, .zero, .zero
+            ]
+            return
+        }
         
         cornerPoints = [
             CGPoint(x: frame.minX + insetX, y: frame.minY + insetY), // Top left
@@ -78,8 +83,8 @@ struct CroppingView: View {
         }
     }
     
-    private func aspectFitRect(imageSize: CGSize, viewSize: CGSize) -> (origin: CGPoint, size: CGSize) {
-        let targetAspect = imageSize.width / imageSize.height
+    private func aspectFitRect(imageExtent: CGSize, viewSize: CGSize) -> (origin: CGPoint, size: CGSize) {
+        let targetAspect = imageExtent.width / imageExtent.height
         let viewAspect = viewSize.width / viewSize.height
         
         let scaledSize: CGSize
@@ -94,32 +99,29 @@ struct CroppingView: View {
     }
 
     private func getImageFrame(imageExtent: CGRect, viewFrame: CGRect) -> CGRect {
-        let imageSize = CGSize(width: imageExtent.width, height: imageExtent.height)
-        return AVMakeRect(aspectRatio: imageSize, insideRect: viewFrame)
+        return AVMakeRect(aspectRatio: imageExtent.size, insideRect: viewFrame)
     }
 
     private func convertPointsFromImageToView(_ points: [CGPoint], imageExtent: CGRect, viewFrame: CGRect) -> [CGPoint] {
-        let imageSize = CGSize(width: imageExtent.width, height: imageExtent.height)
-        let imageFrame = getImageFrame(imageExtent: imageExtent, viewFrame: viewFrame)
+        let imageFrameInView = getImageFrame(imageExtent: imageExtent, viewFrame: viewFrame)
         
         return points.map { point in
             let clampedX = min(max(point.x, 0), imageExtent.width)
             let clampedY = min(max(point.y, 0), imageExtent.height)
-            let viewX = imageFrame.minX + (clampedX / imageExtent.width) * imageFrame.width
-            let viewY = imageFrame.minY + (1 - (clampedY / imageExtent.height)) * imageFrame.height
+            let viewX = imageFrameInView.minX + (imageExtent.width > 0 ? (clampedX / imageExtent.width) * imageFrameInView.width : 0)
+            let viewY = imageFrameInView.minY + (imageExtent.height > 0 ? (1 - (clampedY / imageExtent.height)) * imageFrameInView.height : 0)
             return CGPoint(x: viewX, y: viewY)
         }
     }
 
     private func convertPointsFromViewToImage(_ points: [CGPoint], imageExtent: CGRect, viewFrame: CGRect) -> [CGPoint] {
-        let imageSize = CGSize(width: imageExtent.width, height: imageExtent.height)
-        let imageFrame = getImageFrame(imageExtent: imageExtent, viewFrame: viewFrame)
+        let imageFrameInView = getImageFrame(imageExtent: imageExtent, viewFrame: viewFrame)
         
         return points.map { point in
-            let clampedX = min(max(point.x, imageFrame.minX), imageFrame.maxX)
-            let clampedY = min(max(point.y, imageFrame.minY), imageFrame.maxY)
-            let imageX = ((clampedX - imageFrame.minX) / imageFrame.width) * imageExtent.width
-            let imageY = (1 - ((clampedY - imageFrame.minY) / imageFrame.height)) * imageExtent.height
+            let clampedX = min(max(point.x, imageFrameInView.minX), imageFrameInView.maxX)
+            let clampedY = min(max(point.y, imageFrameInView.minY), imageFrameInView.maxY)
+            let imageX = imageFrameInView.width > 0 ? ((clampedX - imageFrameInView.minX) / imageFrameInView.width) * imageExtent.width : 0
+            let imageY = imageFrameInView.height > 0 ? (1 - ((clampedY - imageFrameInView.minY) / imageFrameInView.height)) * imageExtent.height : 0
             return CGPoint(x: imageX, y: imageY)
         }
     }
@@ -145,6 +147,10 @@ struct CroppingView: View {
     }
     
     private func determineCursor() -> NSCursor {
+        if viewModel.isSamplingFilmBase {
+            return .crosshair
+        }
+        
         if let cornerIndex = hoveredCornerIndex {
             let whiteConfig = NSImage.SymbolConfiguration
                 .init(pointSize: 18, weight: .regular)
@@ -228,8 +234,67 @@ struct CroppingView: View {
     var body: some View {
         GeometryReader { geo in
             ZStack {
-                if let imageToDisplay = renderedSwiftUIImage {
-                    image(imageToDisplay: imageToDisplay, geo: geo)
+                if viewModel.isProcessing {
+                    ProgressView()
+                        .scaleEffect(1.5) // Make it a bit larger
+                        .progressViewStyle(.circular)
+                        .frame(maxWidth: .infinity, maxHeight: .infinity) // Center it
+                } else if let imageToDisplay = renderedSwiftUIImage {
+                    image(imageToDisplay: imageToDisplay, geometryProxy: geo)
+                        .coordinateSpace(name: cropCoordinateSpaceName)
+                        .gesture(
+                            DragGesture(minimumDistance: 0, coordinateSpace: .named(cropCoordinateSpaceName))
+                                .onEnded { value in
+                                    if viewModel.isSamplingFilmBase {
+                                        handleFilmBaseTap(location: value.location, viewSize: geo.size)
+                                    }
+                                }
+                        )
+
+                    if showCropOverlay, !cornerPoints.isEmpty, activeImageFrame != .zero {
+                        ZStack {
+                            if cornerPoints.count == 4 {
+                                CropOverlay(
+                                    cornerPoints: $cornerPoints,
+                                    imageFrame: activeImageFrame,
+                                    parentCoordinateSpaceName: cropCoordinateSpaceName,
+                                    onHover: { hovering in self.isHoveringCropArea = hovering }
+                                )
+                            }
+                            CornerHandles(
+                                geometrySize: geo.size,
+                                cornerPoints: $cornerPoints,
+                                imageFrame: activeImageFrame,
+                                onHoverCallback: { index in self.hoveredCornerIndex = index },
+                                parentCoordinateSpaceName: cropCoordinateSpaceName
+                            )
+                            EdgeHandles(
+                                geometrySize: geo.size,
+                                cornerPoints: $cornerPoints,
+                                imageFrame: activeImageFrame,
+                                parentCoordinateSpaceName: cropCoordinateSpaceName,
+                                onHoverCallback: { index in self.hoveredEdgeIndex = index }
+                            )
+                        }
+                        .coordinateSpace(name: cropCoordinateSpaceName)
+                    }
+                    
+                    if let samplePoint = viewModel.filmBaseSamplePoint,
+                       let imageExtent = viewModel.currentImageModel.processedImage?.extent,
+                       activeImageFrame != .zero {
+                        let viewPoints = convertPointsFromImageToView([samplePoint], imageExtent: imageExtent, viewFrame: activeImageFrame)
+                        if let viewPoint = viewPoints.first {
+                            Circle()
+                                .fill(Color.red.opacity(0.5))
+                                .frame(width: 10, height: 10)
+                                .position(viewPoint)
+                            Circle()
+                                .stroke(Color.white, lineWidth: 1)
+                                .frame(width: 10, height: 10)
+                                .position(viewPoint)
+                        }
+                    }
+                    
                 } else {
                     VStack(spacing: 20) {
                         Text("No image loaded")
@@ -283,6 +348,8 @@ struct CroppingView: View {
                 }
             }
             .onChange(of: showCropOverlay) { _, isShowing in
+                viewModel.isCroppingPreviewActive = isShowing
+
                 if isShowing {
                     if renderedSwiftUIImage == nil || activeImageFrame == .zero {
                          updateRenderedImageAndFrameState(ciImage: viewModel.currentImageModel.processedImage, geometrySize: geo.size)
@@ -296,18 +363,7 @@ struct CroppingView: View {
                             resetCropPoints(in: activeImageFrame)
                         }
                     }
-
-                    if settings.showOriginalWhenCropping {
-                        storedPerspectiveCorrection = viewModel.currentAdjustments.perspectiveCorrection
-                        viewModel.currentAdjustments.perspectiveCorrection = nil
-                    }
                 } else {
-                    if settings.showOriginalWhenCropping {
-                        if let stored = storedPerspectiveCorrection {
-                            viewModel.currentAdjustments.perspectiveCorrection = stored
-                            storedPerspectiveCorrection = nil
-                        }
-                    }
                 }
             }
             .onReceive(NotificationCenter.default.publisher(for: Notification.Name("ResetCrop"))) { _ in
@@ -319,94 +375,122 @@ struct CroppingView: View {
                 }
             }
             .onReceive(NotificationCenter.default.publisher(for: Notification.Name("ResetImage"))) { _ in
-                storedPerspectiveCorrection = nil
                 viewModel.currentAdjustments.perspectiveCorrection = nil
                 viewModel.currentAdjustments = ImageAdjustments()
                 showCropOverlay = false
             }
             .onReceive(NotificationCenter.default.publisher(for: Notification.Name("ApplyCrop"))) { _ in
                 applyCrop(in: geo.size)
-                storedPerspectiveCorrection = nil
                 showCropOverlay = false
             }
-            .onReceive(edgeHoverSubject) { index in
-                if self.hoveredEdgeIndex != index {
-                    self.hoveredEdgeIndex = index
-                    determineCursor().set()
-                }
+            .onChange(of: viewModel.isSamplingFilmBase) { oldValue, newValue in
+                 NSCursor.current.set()
             }
-            .onReceive(cornerHoverSubject) { index in
-                if self.hoveredCornerIndex != index {
-                    self.hoveredCornerIndex = index
+            .onContinuousHover(coordinateSpace: .named(cropCoordinateSpaceName)) { phase in
+                switch phase {
+                case .active(let location):
+                    updateHoverStates(at: location, viewSize: geo.size)
                     determineCursor().set()
-                }
-            }
-            .onReceive(areaHoverSubject) { hovering in
-                if self.isHoveringCropArea != hovering {
-                    self.isHoveringCropArea = hovering
-                    determineCursor().set()
+                case .ended:
+                    hoveredCornerIndex = nil
+                    hoveredEdgeIndex = nil
+                    isHoveringCropArea = false
+                    NSCursor.arrow.set()
                 }
             }
         }
     }
     
-    func image(imageToDisplay: Image, geo: GeometryProxy) -> some View {
+    private func image(imageToDisplay: Image, geometryProxy geo: GeometryProxy) -> some View {
         imageToDisplay
             .resizable()
             .aspectRatio(contentMode: .fit)
-            .frame(maxHeight: .infinity)
-            .scaledToFit()
-            .frame(width: geo.size.width, height: geo.size.height)
-            .overlay {
-                if showCropOverlay && activeImageFrame != .zero {
-                    ZStack {
-                        if cornerPoints.count == 4 {
-                            CropOverlay(
-                                cornerPoints: $cornerPoints,
-                                imageFrame: activeImageFrame,
-                                parentCoordinateSpaceName: cropCoordinateSpaceName,
-                                onHover: { hovering in
-                                    self.areaHoverSubject.send(hovering)
-                                }
-                            )
-                        }
-                        CornerHandles(geometrySize: geo.size,
-                                    cornerPoints: $cornerPoints,
-                                    imageFrame: activeImageFrame,
-                                    onHoverCallback: { index in
-                                        self.cornerHoverSubject.send(index)
-                                    },
-                                    parentCoordinateSpaceName: cropCoordinateSpaceName)
-                        EdgeHandles(geometrySize: geo.size,
-                                  cornerPoints: $cornerPoints,
-                                  imageFrame: activeImageFrame,
-                                  parentCoordinateSpaceName: cropCoordinateSpaceName,
-                                  onHoverCallback: { index in
-                                      self.edgeHoverSubject.send(index)
-                                  })
-                    }
-                    .coordinateSpace(name: cropCoordinateSpaceName)
-                }
-            }
+            .frame(width: activeImageFrame.width, height: activeImageFrame.height)
+            .position(x: activeImageFrame.origin.x + activeImageFrame.width / 2, 
+                      y: activeImageFrame.origin.y + activeImageFrame.height / 2)
     }
 
-    /// Applies the current corner points as a perspective correction.
     private func applyCrop(in geometrySize: CGSize) {
-        guard let image = viewModel.currentImageModel.processedImage else { return } // Use currentImageModel
+        guard let image = viewModel.currentImageModel.processedImage else { return }
         let imageExtent = CGRect(origin: .zero, size: image.extent.size)
-        let imageFrame = getImageFrame(imageExtent: imageExtent, viewFrame: CGRect(origin: .zero, size: geometrySize))
+        _ = getImageFrame(imageExtent: imageExtent, viewFrame: CGRect(origin: .zero, size: geometrySize))
         
-        // Convert view points back to image coordinates
         let imagePoints = convertPointsFromViewToImage(cornerPoints, imageExtent: imageExtent, viewFrame: CGRect(origin: .zero, size: geometrySize))
         
         let correction = ImageAdjustments.PerspectiveCorrection(
             points: imagePoints,
             imageSize: imageExtent.size
         )
-        // Set the correction on the *current* adjustments
         viewModel.currentAdjustments.perspectiveCorrection = correction 
-        // The processImage call is now implicitly handled by the setter of currentAdjustments
-        // Task { await viewModel.processImage() } // No longer needed here
         logger.info("Applied perspective crop.")
+    }
+
+    private func updateHoverStates(at location: CGPoint, viewSize: CGSize) {
+        let cornerSize: CGFloat = 20
+
+        hoveredCornerIndex = nil
+        if showCropOverlay, !cornerPoints.isEmpty {
+            for i in cornerPoints.indices {
+                let cornerArea = CGRect(x: cornerPoints[i].x - cornerSize/2, y: cornerPoints[i].y - cornerSize/2, width: cornerSize, height: cornerSize)
+                if cornerArea.contains(location) {
+                    hoveredCornerIndex = i
+                    break
+                }
+            }
+        }
+
+        hoveredEdgeIndex = nil
+        if showCropOverlay, hoveredCornerIndex == nil, cornerPoints.count == 4 {
+            for i in 0..<4 {
+                let p1 = cornerPoints[i]
+                let p2 = cornerPoints[(i+1)%4]
+                let midPoint = CGPoint(x: (p1.x + p2.x)/2, y: (p1.y + p2.y)/2)
+                let edgeArea = CGRect(x: midPoint.x - cornerSize/2, y: midPoint.y - cornerSize/2, width: cornerSize, height: cornerSize)
+                if edgeArea.contains(location) {
+                    hoveredEdgeIndex = i
+                    break
+                }
+            }
+        }
+        
+        isHoveringCropArea = false
+        if showCropOverlay, hoveredCornerIndex == nil, hoveredEdgeIndex == nil, cornerPoints.count == 4 {
+            let path = Path { p in
+                p.move(to: cornerPoints[0])
+                for i in 1..<4 { p.addLine(to: cornerPoints[i]) }
+                p.closeSubpath()
+            }
+            if path.contains(location) {
+                isHoveringCropArea = true
+            }
+        }
+    }
+
+    private func handleFilmBaseTap(location: CGPoint, viewSize: CGSize) {
+        logger.info("Tap detected for film base sampling at view location: \(String(describing: location))")
+        
+        guard let imageExtent = viewModel.currentImageModel.processedImage?.extent else {
+            logger.warning("Cannot sample film base, processed image (or its extent) is nil.")
+            viewModel.isSamplingFilmBase = false
+            return
+        }
+        
+        guard activeImageFrame != .zero else {
+            logger.warning("Cannot sample film base, activeImageFrame is zero.")
+            viewModel.isSamplingFilmBase = false
+            return
+        }
+
+        let imagePoints = convertPointsFromViewToImage([location], imageExtent: imageExtent, viewFrame: activeImageFrame)
+        
+        if let imagePoint = imagePoints.first {
+            let clampedImagePoint = CGPoint(x: max(0, min(imagePoint.x, imageExtent.width)),
+                                          y: max(0, min(imagePoint.y, imageExtent.height)))
+            logger.info("Converted tap to image location: \(String(describing: clampedImagePoint))")
+            viewModel.selectFilmBasePoint(at: clampedImagePoint)
+        } else {
+            logger.warning("Could not convert view tap location \(String(describing: location)) in view frame \(String(describing: activeImageFrame)) to image location.")
+            viewModel.isSamplingFilmBase = false
+        }
     }
 }

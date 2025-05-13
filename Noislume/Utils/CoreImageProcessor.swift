@@ -30,19 +30,24 @@ actor CoreImageProcessor {
             BasicToneFilter(),
             HighlightShadowFilter(),
             GammaFilter(),
+            
+            // Positive Color Grading (after Tone & Contrast, before B&W)
+            PositiveColorGradeFilter(),
+            
+            // Black and White (now after positive color grading)
+            BlackAndWhiteFilter()
         ]
         self.context = CIContext()
     }
     
-    func processRAWImage(fileURL: URL, adjustments: ImageAdjustments) async throws -> CIImage? {
-        currentTask?.cancel()
+    func processRAWImage(fileURL: URL, adjustments: ImageAdjustments, processUntilFilterOfType: Any.Type? = nil, applyFullFilterChain: Bool = true) async throws -> CIImage? {
         
         let task = Task<CIImage?, Error> {
             try Task.checkCancellation()
             
             guard let rawFilter = CIRAWFilter(imageURL: fileURL) else {
                 self.logger.error("Failed to create CIRAWFilter")
-                return CIImage()
+                return nil
             }
             
             self.logger.info("About to apply RAW adjustments - Temperature: \(adjustments.temperature), Tint: \(adjustments.tint), Exposure: \(adjustments.exposure)")
@@ -64,15 +69,31 @@ actor CoreImageProcessor {
                 processedImage = preview
             } else {
                 self.logger.error("Failed to get any image from RAW filter")
-                return CIImage()
+                return nil
+            }
+            
+            // If applyFullFilterChain is false, return the image after basic RAW processing only.
+            if !applyFullFilterChain {
+                self.logger.info("Skipping full filter chain as per request. Returning basic RAW processed image.")
+                return processedImage
             }
             
             var finalImage = processedImage
             for filter in self.filterChain {
+                // Check if we need to stop before this filter
+                if let stopType = processUntilFilterOfType,
+                   type(of: filter) == stopType {
+                    self.logger.info("Stopping processing before filter type: \(stopType)")
+                    return finalImage // Return image state before applying the stop filter
+                }
+                
                 finalImage = filter.apply(to: finalImage, with: adjustments)
                 try Task.checkCancellation()
             }
             
+            // If processUntilFilterOfType was specified but not found, it means we processed the whole chain.
+            // If it was nil, we also process the whole chain.
+            self.logger.info("Finished processing filter chain. Last filter applied: \(self.filterChain.last != nil ? String(describing: type(of: self.filterChain.last!)) : "None")")
             return finalImage
         }
         
@@ -93,7 +114,9 @@ actor CoreImageProcessor {
         // Option 1: Use processRAWImage if adjustments are provided
         if let adjustments = adjustments {
             do {
-                guard let processedCIImage = try await self.processRAWImage(fileURL: url, adjustments: adjustments) else {
+                // Ensure full processing for thumbnails, so processUntilFilterOfType is nil
+                // Thumbnails should always reflect the full adjustments, so applyFullFilterChain is true.
+                guard let processedCIImage = try await self.processRAWImage(fileURL: url, adjustments: adjustments, processUntilFilterOfType: nil, applyFullFilterChain: true) else {
                     self.logger.error("Thumbnail generation failed: processRAWImage returned nil for \(url.lastPathComponent) with adjustments.")
                     return nil
                 }

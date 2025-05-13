@@ -19,6 +19,10 @@ class InversionViewModel: ObservableObject {
     
     // Keep track of the currently active URL to easily access its state.
     @Published private(set) var activeURL: URL? = nil
+    
+    @Published var isSamplingFilmBase = false // New state for UI
+    @Published var isCroppingPreviewActive: Bool = false // For showing unprocessed image during crop
+    
     // --- End State Management Changes ---
     
     @Published var isProcessing = false // For main image processing
@@ -65,6 +69,17 @@ class InversionViewModel: ObservableObject {
         thumbnailManager.objectWillChange
             .sink { [weak self] _ in
                 self?.objectWillChange.send()
+            }
+            .store(in: &cancellables)
+        
+        // Sink for isCroppingPreviewActive to trigger re-processing
+        $isCroppingPreviewActive
+            .dropFirst() // Don't trigger on initial value
+            .sink { [weak self] _ in
+                guard let self = self else { return }
+                Task {
+                    await self.processImage()
+                }
             }
             .store(in: &cancellables)
             
@@ -177,7 +192,8 @@ class InversionViewModel: ObservableObject {
             do {
                 guard let processedImage = try await self.processor.processRAWImage(
                     fileURL: url,
-                    adjustments: adjustmentsForProcessing // Use adjustments from ImageState
+                    adjustments: adjustmentsForProcessing, // Use adjustments from ImageState
+                    applyFullFilterChain: !self.isCroppingPreviewActive
                 ) else {
                     self.logger.error("Failed to process RAW image at URL: \(url.path)")
                     self.errorMessage = "Failed to load RAW image"
@@ -198,9 +214,12 @@ class InversionViewModel: ObservableObject {
 
             } catch {
                 self.isProcessing = false
-                guard !(error is CancellationError) else { return }
+                guard !(error is CancellationError) else {
+                    self.currentImageModel.processedImage = nil // Explicitly set to nil on cancellation
+                    return
+                }
                 
-                self.logger.error("Failed processing image at URL \(url.path); \(error)")
+                self.logger.error("Failed processing image at URL \(url.path); \(error.localizedDescription)")
                 self.errorMessage = error.localizedDescription
                 self.currentImageModel.processedImage = nil // Reset display model image
             }
@@ -236,7 +255,8 @@ class InversionViewModel: ObservableObject {
                 // Use the existing shared processor instance
                 guard let processedImage = try await processor.processRAWImage(
                     fileURL: fileURL,
-                    adjustments: adjustments // Pass the correct adjustments
+                    adjustments: adjustments, // Pass the correct adjustments
+                    applyFullFilterChain: !self.isCroppingPreviewActive
                 ) else {
                     logger.error("Failed to re-process RAW image at URL: \(fileURL.path)")
                     errorMessage = "Failed to re-process RAW image"
@@ -327,6 +347,207 @@ class InversionViewModel: ObservableObject {
     }
     
     // --- End Persistence Helper Functions ---
+
+    // MARK: - Adjustment Properties for UI Binding
+
+    // Example for existing adjustments (if you centralize them like this)
+    var exposure: Float {
+        get { currentAdjustments.exposure }
+        set { currentAdjustments.exposure = newValue }
+    }
+    
+    var temperature: Float {
+        get { currentAdjustments.temperature }
+        set { currentAdjustments.temperature = newValue }
+    }
+    
+    var tint: Float {
+        get { currentAdjustments.tint }
+        set { currentAdjustments.tint = newValue }
+    }
+    
+    // ... other existing direct adjustment bindings ...
+
+    // New Positive Color Grading Properties
+    var positiveTemperature: Float {
+        get { currentAdjustments.positiveTemperature }
+        set { currentAdjustments.positiveTemperature = newValue }
+    }
+
+    var positiveTint: Float {
+        get { currentAdjustments.positiveTint }
+        set { currentAdjustments.positiveTint = newValue }
+    }
+
+    var positiveVibrance: Float {
+        get { currentAdjustments.positiveVibrance }
+        set { currentAdjustments.positiveVibrance = newValue }
+    }
+
+    var positiveSaturation: Float {
+        get { currentAdjustments.positiveSaturation }
+        set { currentAdjustments.positiveSaturation = newValue }
+    }
+
+    // B&W Mixer Properties
+    var isBlackAndWhite: Bool {
+        get { currentAdjustments.isBlackAndWhite }
+        set { currentAdjustments.isBlackAndWhite = newValue }
+    }
+
+    var bwRedContribution: Float {
+        get { currentAdjustments.bwRedContribution }
+        set { currentAdjustments.bwRedContribution = newValue }
+    }
+
+    var bwGreenContribution: Float {
+        get { currentAdjustments.bwGreenContribution }
+        set { currentAdjustments.bwGreenContribution = newValue }
+    }
+
+    var bwBlueContribution: Float {
+        get { currentAdjustments.bwBlueContribution }
+        set { currentAdjustments.bwBlueContribution = newValue }
+    }
+    
+    var sepiaIntensity: Float { // Already existed if used elsewhere, ensure it's here
+        get { currentAdjustments.sepiaIntensity }
+        set { currentAdjustments.sepiaIntensity = newValue }
+    }
+
+    // Film Base Sampling Properties
+    var filmBaseSamplePoint: CGPoint? {
+        get { currentAdjustments.filmBaseSamplePoint }
+        set { 
+            currentAdjustments.filmBaseSamplePoint = newValue
+            // If point is cleared, also clear sampled color
+            if newValue == nil {
+                currentAdjustments.sampledFilmBaseColor = nil
+            }
+            // Trigger processing is handled by the caller of this, 
+            // or when sampledFilmBaseColor is set by selectFilmBasePoint.
+        }
+    }
+
+    var sampledFilmBaseColor: CIColor? { // For display or direct manipulation if ever needed
+        get { currentAdjustments.sampledFilmBaseColor }
+        // Typically set via selectFilmBasePoint
+        set { currentAdjustments.sampledFilmBaseColor = newValue }
+    }
+
+    // --- End State Management Changes ---
+    
+    func resetCurrentAdjustments() {
+        currentAdjustments.resetAll()
+        // Manually trigger processing and thumbnail update after reset
+        if let url = activeURL {
+            if let updatedState = imageStates[url] {
+                persistenceManager.saveImageState(updatedState) // Save reset state
+                thumbnailManager.regenerateThumbnail(for: url, adjustments: updatedState.adjustments)
+            }
+        }
+        triggerImageProcessing() // Re-process with reset adjustments
+    }
+    
+    func triggerImageProcessing() {
+        Task {
+            await processImage()
+        }
+    }
+    
+    // MARK: - Film Base Sampling
+    
+    func toggleFilmBaseSampling() {
+        isSamplingFilmBase.toggle()
+        // If turning off sampling, ensure no point is erroneously processed if not set.
+        // The actual setting of the point comes from UI interaction.
+    }
+    
+    func clearFilmBaseSample() {
+        filmBaseSamplePoint = nil // This will also nil out sampledFilmBaseColor via its setter logic
+        sampledFilmBaseColor = nil // Explicitly clear here too
+        triggerImageProcessing() // Re-process with automatic film base detection
+        isSamplingFilmBase = false // Turn off sampling mode
+    }
+
+    func selectFilmBasePoint(at imagePoint: CGPoint) {
+        guard let url = activeURL else {
+            logger.warning("Cannot select film base point, activeURL is nil.")
+            isSamplingFilmBase = false
+            return
+        }
+        
+        // Store the relative point for UI display (e.g., drawing a marker)
+        self.filmBaseSamplePoint = imagePoint 
+
+//        logger.info("Film base sample point selected at: \(imagePoint). Getting pre-inversion image...")
+        isProcessing = true // Indicate activity
+
+        Task {
+            defer { 
+                isProcessing = false
+                isSamplingFilmBase = false // Turn off sampling mode after attempt
+            }
+            
+            do {
+                // Get the image state *before* the InversionFilter is applied.
+                // Note: currentAdjustments are passed, which is correct as geometry etc. should apply.
+                let preInversionImage = try await processor.processRAWImage(
+                    fileURL: url, 
+                    adjustments: currentAdjustments, 
+                    processUntilFilterOfType: InversionFilter.self // Stop before InversionFilter
+                )
+
+                if let imageToSample = preInversionImage, 
+                   let color = sampleColor(from: imageToSample, at: imagePoint) {
+                    self.sampledFilmBaseColor = color
+                    logger.info("Sampled film base color: \(color.red), \(color.green), \(color.blue), \(color.alpha)")
+                    triggerImageProcessing() // Re-process with the new sampled color
+                } else {
+                    logger.warning("Failed to get pre-inversion image or sample color. Film base point selection aborted.")
+                    // If sampling fails, we might want to clear the point to avoid confusion,
+                    // or leave it for the user to see where they clicked but with no effect.
+                    // For now, keeping the point but the color won't be set, so InversionFilter uses fallback.
+                }
+            } catch {
+                logger.error("Error during film base point selection process: \(error.localizedDescription)")
+            }
+        }
+    }
+    
+    // Helper to sample color from a CIImage at a specific point
+    // This is similar to the CIImage.colorAt(pos:) extension that was removed.
+    private func sampleColor(from image: CIImage, at point: CGPoint) -> CIColor? {
+        // Ensure the point is within the image bounds
+        let imageExtent = image.extent
+        guard imageExtent.contains(point) else {
+//            logger.warning("Sample point \(point) is outside image extent \(imageExtent).")
+            return nil
+        }
+
+        // Create a 1x1 rectangle around the point to sample
+        let sampleRect = CGRect(x: point.x, y: point.y, width: 1, height: 1)
+        
+        // Crop the image to this 1x1 rectangle
+        let croppedImage = image.cropped(to: sampleRect)
+        
+        // Get the color of the single pixel
+        // For a 1x1 image, we can use a context to render it and get the pixel data.
+        let context = CIContext(options: nil) // A temporary context is okay here
+        var bitmap = [UInt8](repeating: 0, count: 4) // RGBA
+        
+        context.render(croppedImage, 
+                       toBitmap: &bitmap, 
+                       rowBytes: 4, 
+                       bounds: CGRect(x: 0, y: 0, width: 1, height: 1), // Relative to croppedImage
+                       format: .RGBA8, 
+                       colorSpace: image.colorSpace ?? CGColorSpaceCreateDeviceRGB())
+        
+        return CIColor(red: CGFloat(bitmap[0]) / 255.0,
+                       green: CGFloat(bitmap[1]) / 255.0,
+                       blue: CGFloat(bitmap[2]) / 255.0,
+                       alpha: CGFloat(bitmap[3]) / 255.0)
+    }
 }
 
 // ExportDocument struct and ExportError enum were moved to their own files.

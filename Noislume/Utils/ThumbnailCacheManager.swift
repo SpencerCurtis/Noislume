@@ -190,7 +190,6 @@ class ThumbnailCacheManager {
                     continue
                 }
                 // Log the file being processed and its size
-                logger.trace("Processing file: \(fileURL.lastPathComponent), Size: \(fileSize) bytes")
                 currentSize += Int64(fileSize)
                 filesWithDateAndSize.append((url: fileURL, date: modificationDate, size: Int64(fileSize)))
             }

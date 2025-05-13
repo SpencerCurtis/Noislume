@@ -1,45 +1,4 @@
-
-
 import SwiftUI
-
-enum KeyboardShortcut: String, CaseIterable {
-    case openFile = "Open File"
-    case saveFile = "Save File"
-    case toggleCrop = "Toggle Crop"
-    case resetAdjustments = "Reset Adjustments"
-    
-    var defaultShortcut: KeyboardShortcutDefinition {
-        switch self {
-        case .openFile:
-            return .init(key: "o", modifiers: [.command])
-        case .saveFile:
-            return .init(key: "s", modifiers: [.command])
-        case .toggleCrop:
-            return .init(key: "k", modifiers: [.command])
-        case .resetAdjustments:
-            return .init(key: "r", modifiers: [.command])
-        }
-    }
-}
-
-struct KeyboardShortcutDefinition: Codable, Equatable {
-    var key: String
-    private var rawModifiers: Int
-    
-    var modifiers: EventModifiers {
-        EventModifiers(rawValue: rawModifiers)
-    }
-    
-    var shortcut: SwiftUI.KeyboardShortcut? {
-        guard let firstChar = key.first else { return nil }
-        return .init(KeyEquivalent(firstChar), modifiers: modifiers)
-    }
-    
-    init(key: String, modifiers: EventModifiers) {
-        self.key = key
-        self.rawModifiers = modifiers.rawValue
-    }
-}
 
 @MainActor
 final class KeyboardShortcutManager: ObservableObject {

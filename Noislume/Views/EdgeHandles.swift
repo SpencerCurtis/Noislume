@@ -1,23 +1,5 @@
 import SwiftUI
 
-struct PositionedHandle: View {
-    let baseHandleView: AnyView
-    let rotation: Angle
-    let onHoverAction: (Bool) -> Void
-    let onDragAction: (DragGesture.Value) -> Void
-    let parentCoordinateSpaceName: String
-
-    var body: some View {
-        baseHandleView
-            .rotationEffect(rotation)
-            .onHover(perform: onHoverAction)
-            .gesture(
-                DragGesture(minimumDistance: 0, coordinateSpace: .named(parentCoordinateSpaceName))
-                    .onChanged(onDragAction)
-            )
-    }
-}
-
 struct EdgeHandles: View {
     let geometrySize: CGSize // Size of the parent container (e.g., GeometryReader in CroppingView)
     @Binding var cornerPoints: [CGPoint] // Points are in the coordinate space of geometrySize

@@ -329,24 +329,4 @@ class InversionViewModel: ObservableObject {
     // --- End Persistence Helper Functions ---
 }
 
-struct ExportDocument: FileDocument {
-    static var readableContentTypes: [UTType] { [UTType.tiff] }
-    
-    let image: CIImage
-    
-    init(image: CIImage) {
-        self.image = image
-    }
-    
-    init(configuration: ReadConfiguration) throws {
-        fatalError("This document type is write-only")
-    }
-    
-    func fileWrapper(configuration: WriteConfiguration) throws -> FileWrapper {
-        return .init()
-    }
-}
-
-enum ExportError: Error {
-    case failedToExport
-}
+// ExportDocument struct and ExportError enum were moved to their own files.

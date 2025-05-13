@@ -37,13 +37,15 @@ struct EditingSidebar: View {
             )
             
             ColorAdjustmentsSection(
-                viewModel: viewModel,
-                isExpanded: $isColorAdjustmentsExpanded
+                adjustments: $viewModel.currentAdjustments,
+                isExpanded: $isColorAdjustmentsExpanded,
+                isDisabled: viewModel.activeURL == nil
             )
             
             EffectsSection(
-                viewModel: viewModel,
-                isExpanded: $isEffectsExpanded
+                adjustments: $viewModel.currentAdjustments,
+                isExpanded: $isEffectsExpanded,
+                isDisabled: viewModel.activeURL == nil
             )
             
             Spacer()
@@ -53,7 +55,7 @@ struct EditingSidebar: View {
                 Button("Export") {
                     showExporter = true
                 }
-                .disabled(viewModel.imageModel.processedImage == nil)
+                .disabled(viewModel.currentImageModel.processedImage == nil)
             }
         }
         .padding()

@@ -10,6 +10,8 @@ actor CoreImageProcessor {
     
     private let filterChain: [ImageFilter]
     private let context: CIContext // For all CIImage rendering
+    private let filterQueue = DispatchQueue(label: "com.SpencerCurtis.Noislume.CoreImageFilterQueue", qos: .userInitiated)
+    private let ciContext = CIContext(options: [.cacheIntermediates: false, .allowLowPower: true]) // Consider options
 
     static let shared = CoreImageProcessor()
     
@@ -78,33 +80,86 @@ actor CoreImageProcessor {
         return try await task.value
     }
 
-    // Updated function to use ImageIO for potentially better memory efficiency
-    func generateThumbnail(from fileURL: URL, targetWidth: CGFloat = 160) async -> CGImage? {
-        logger.debug("Generating thumbnail using ImageIO for \(fileURL.lastPathComponent) with target width \(targetWidth)")
+    // MARK: - Thumbnail Generation
+    
+    /// Generates a thumbnail CGImage from a RAW file URL, optionally applying adjustments.
+    ///
+    /// - Parameters:
+    ///   - url: The URL of the RAW image file.
+    ///   - targetWidth: The desired width of the thumbnail.
+    ///   - adjustments: Optional `ImageAdjustments` to apply before generating the thumbnail.
+    /// - Returns: A `CGImage` for the thumbnail, or `nil` if generation fails.
+    func generateThumbnail(from url: URL, targetWidth: CGFloat, adjustments: ImageAdjustments? = nil) async -> CGImage? {
+        // Option 1: Use processRAWImage if adjustments are provided
+        if let adjustments = adjustments {
+            do {
+                guard let processedCIImage = try await self.processRAWImage(fileURL: url, adjustments: adjustments) else {
+                    self.logger.error("Thumbnail generation failed: processRAWImage returned nil for \(url.lastPathComponent) with adjustments.")
+                    return nil
+                }
+                
+                // Downscale the fully processed image for thumbnail
+                let scale = targetWidth / processedCIImage.extent.width
+                // Ensure scale is valid if extent.width is zero to prevent NaN
+                guard scale.isFinite, scale > 0 else {
+                    self.logger.error("Thumbnail generation failed: Invalid scale factor (\(scale)) for \(url.lastPathComponent). Image extent width might be zero.")
+                    return nil
+                }
+                let scaledImage = processedCIImage.transformed(by: CGAffineTransform(scaleX: scale, y: scale))
+                                    .samplingLinear()
+                
+                let outputRect = CGRect(origin: .zero, size: CGSize(width: targetWidth, height: scaledImage.extent.height))
+                
+                // Render the downscaled, adjusted CIImage to CGImage
+                // Use the actor-isolated ciContext directly
+                guard let cgImage = self.ciContext.createCGImage(scaledImage, from: outputRect) else {
+                    self.logger.error("Thumbnail generation failed: Could not create CGImage from adjusted+scaled CIImage for \(url.lastPathComponent).")
+                    return nil
+                }
+                self.logger.debug("Generated thumbnail for \(url.lastPathComponent) using full adjustments.")
+                return cgImage
+                
+            } catch {
+                self.logger.error("Thumbnail generation failed: Error during processRAWImage for \(url.lastPathComponent) with adjustments: \(error.localizedDescription)")
+                return nil
+            }
+        }
         
-        // Define ImageIO options
-        let options: [CFString: Any] = [
-            kCGImageSourceCreateThumbnailWithTransform: true,
-            kCGImageSourceShouldCacheImmediately: false, // Try to reduce memory footprint further
-            kCGImageSourceThumbnailMaxPixelSize: targetWidth,
-            kCGImageSourceCreateThumbnailFromImageAlways: true // Ensures a thumbnail is created
-        ]
-        
-        // Create the image source
-        guard let imageSource = CGImageSourceCreateWithURL(fileURL as CFURL, nil) else {
-            logger.error("Failed to create CGImageSource for thumbnail: \(fileURL.lastPathComponent)")
+        // Option 2: Existing/Simplified thumbnail logic (if no adjustments)
+        // Fallback to basic thumbnail generation if no adjustments provided
+        guard let rawFilter = CIRAWFilter(imageURL: url) else {
+            self.logger.error("Thumbnail generation failed: Could not create CIRAWFilter for \(url.lastPathComponent).")
             return nil
         }
         
-        // Create the thumbnail
-        guard let thumbnailCGImage = CGImageSourceCreateThumbnailAtIndex(imageSource, 0, options as CFDictionary) else {
-             logger.warning("Failed to create CGImage thumbnail using ImageIO for: \(fileURL.lastPathComponent). Image type might not be fully supported for thumbnails or file is corrupt.")
-             // Optional: Fallback to CoreImage if needed, or just return nil
-             return nil
-        }
+        // Apply a default small exposure adjustment if none are provided to ensure RAW is decoded reasonably.
+        // Some RAW files might appear very dark otherwise for a thumbnail.
+        rawFilter.exposure = 0.1 
         
-        logger.debug("Successfully generated thumbnail using ImageIO for \(fileURL.lastPathComponent)")
-        return thumbnailCGImage
+        guard let ciImage = rawFilter.outputImage else {
+            self.logger.error("Thumbnail generation failed: Could not get outputImage from CIRAWFilter for \(url.lastPathComponent).")
+            return nil
+        }
+
+        // --- Basic Downscaling (No Adjustments) ---
+        let scale = targetWidth / ciImage.extent.width
+        // Ensure scale is valid
+        guard scale.isFinite, scale > 0 else {
+            self.logger.error("Thumbnail generation failed: Invalid scale factor (\(scale)) for \(url.lastPathComponent) during basic scaling. Image extent width might be zero.")
+            return nil
+        }
+        let scaledImage = ciImage.transformed(by: CGAffineTransform(scaleX: scale, y: scale))
+                               .samplingLinear() // Use linear for better quality downscaling
+        
+        let outputRect = CGRect(origin: .zero, size: CGSize(width: targetWidth, height: scaledImage.extent.height))
+        
+        // Use the actor-isolated ciContext directly
+        guard let cgImage = self.ciContext.createCGImage(scaledImage, from: outputRect) else {
+             self.logger.error("Thumbnail generation failed: Could not create CGImage from basic scaled CIImage for \(url.lastPathComponent).")
+            return nil
+        }
+        self.logger.debug("Generated thumbnail for \(url.lastPathComponent) using basic method (no adjustments).")
+        return cgImage
     }
 
     func exportToTIFFData(_ image: CIImage) -> Data? {

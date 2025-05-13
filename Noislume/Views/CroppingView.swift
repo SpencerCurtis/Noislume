@@ -249,9 +249,9 @@ struct CroppingView: View {
                 }
             }
             .onAppear {
-                updateRenderedImageAndFrameState(ciImage: viewModel.imageModel.processedImage, geometrySize: geo.size)
+                updateRenderedImageAndFrameState(ciImage: viewModel.currentImageModel.processedImage, geometrySize: geo.size)
                 if activeImageFrame != .zero {
-                    if let correction = viewModel.imageModel.adjustments.perspectiveCorrection {
+                    if let correction = viewModel.currentAdjustments.perspectiveCorrection {
                         cornerPoints = convertPointsFromImageToView(correction.points,
                                                                  imageExtent: CGRect(origin: .zero, size: correction.originalImageSize),
                                                                  viewFrame: CGRect(origin: .zero, size: geo.size))
@@ -263,17 +263,17 @@ struct CroppingView: View {
                 }
             }
             .onChange(of: geo.size) { _, newGeoSize in
-                updateRenderedImageAndFrameState(ciImage: viewModel.imageModel.processedImage, geometrySize: newGeoSize)
+                updateRenderedImageAndFrameState(ciImage: viewModel.currentImageModel.processedImage, geometrySize: newGeoSize)
             }
-            .onChange(of: viewModel.imageModel.processedImage) { _, newCIImage in
+            .onChange(of: viewModel.currentImageModel.processedImage) { _, newCIImage in
                 updateRenderedImageAndFrameState(ciImage: newCIImage, geometrySize: geo.size)
                 if activeImageFrame != .zero {
-                    if newCIImage != nil && viewModel.imageModel.adjustments.perspectiveCorrection == nil {
+                    if newCIImage != nil && viewModel.currentAdjustments.perspectiveCorrection == nil {
                         resetCropPoints(in: activeImageFrame)
                     } else if newCIImage == nil {
                         cornerPoints = []
                     }
-                    if let correction = viewModel.imageModel.adjustments.perspectiveCorrection, activeImageFrame != .zero {
+                    if let correction = viewModel.currentAdjustments.perspectiveCorrection, activeImageFrame != .zero {
                          cornerPoints = convertPointsFromImageToView(correction.points,
                                                                   imageExtent: CGRect(origin: .zero, size: correction.originalImageSize),
                                                                   viewFrame: CGRect(origin: .zero, size: geo.size))
@@ -285,10 +285,10 @@ struct CroppingView: View {
             .onChange(of: showCropOverlay) { _, isShowing in
                 if isShowing {
                     if renderedSwiftUIImage == nil || activeImageFrame == .zero {
-                         updateRenderedImageAndFrameState(ciImage: viewModel.imageModel.processedImage, geometrySize: geo.size)
+                         updateRenderedImageAndFrameState(ciImage: viewModel.currentImageModel.processedImage, geometrySize: geo.size)
                     }
                     if cornerPoints.isEmpty && activeImageFrame != .zero {
-                        if let correction = viewModel.imageModel.adjustments.perspectiveCorrection {
+                        if let correction = viewModel.currentAdjustments.perspectiveCorrection {
                             cornerPoints = convertPointsFromImageToView(correction.points,
                                                                      imageExtent: CGRect(origin: .zero, size: correction.originalImageSize),
                                                                      viewFrame: CGRect(origin: .zero, size: geo.size))
@@ -298,22 +298,20 @@ struct CroppingView: View {
                     }
 
                     if settings.showOriginalWhenCropping {
-                        storedPerspectiveCorrection = viewModel.imageModel.adjustments.perspectiveCorrection
-                        viewModel.imageModel.adjustments.perspectiveCorrection = nil
-                        Task { await viewModel.processImage() }
+                        storedPerspectiveCorrection = viewModel.currentAdjustments.perspectiveCorrection
+                        viewModel.currentAdjustments.perspectiveCorrection = nil
                     }
                 } else {
                     if settings.showOriginalWhenCropping {
                         if let stored = storedPerspectiveCorrection {
-                            viewModel.imageModel.adjustments.perspectiveCorrection = stored
+                            viewModel.currentAdjustments.perspectiveCorrection = stored
                             storedPerspectiveCorrection = nil
-                            Task { await viewModel.processImage() }
                         }
                     }
                 }
             }
             .onReceive(NotificationCenter.default.publisher(for: Notification.Name("ResetCrop"))) { _ in
-                if let image = viewModel.imageModel.processedImage {
+                if let image = viewModel.currentImageModel.processedImage {
                     let imageContentSize = CGSize(width: image.extent.width, height: image.extent.height)
                     let frameForReset = AVMakeRect(aspectRatio: imageContentSize, insideRect: CGRect(origin: .zero, size: geo.size))
                     self.activeImageFrame = frameForReset
@@ -322,8 +320,9 @@ struct CroppingView: View {
             }
             .onReceive(NotificationCenter.default.publisher(for: Notification.Name("ResetImage"))) { _ in
                 storedPerspectiveCorrection = nil
-                viewModel.imageModel.adjustments.perspectiveCorrection = nil
-                Task { await viewModel.processImage(); showCropOverlay = false }
+                viewModel.currentAdjustments.perspectiveCorrection = nil
+                viewModel.currentAdjustments = ImageAdjustments()
+                showCropOverlay = false
             }
             .onReceive(NotificationCenter.default.publisher(for: Notification.Name("ApplyCrop"))) { _ in
                 applyCrop(in: geo.size)
@@ -391,15 +390,23 @@ struct CroppingView: View {
             }
     }
 
-    func applyCrop(in viewSize: CGSize) {
-        guard let inputImage = viewModel.imageModel.processedImage else { return }
-        let imagePoints = convertPointsFromViewToImage(cornerPoints,
-                                                     imageExtent: inputImage.extent,
-                                                     viewFrame: CGRect(origin: .zero, size: viewSize))
-        viewModel.imageModel.applyPerspectiveCorrection(
+    /// Applies the current corner points as a perspective correction.
+    private func applyCrop(in geometrySize: CGSize) {
+        guard let image = viewModel.currentImageModel.processedImage else { return } // Use currentImageModel
+        let imageExtent = CGRect(origin: .zero, size: image.extent.size)
+        let imageFrame = getImageFrame(imageExtent: imageExtent, viewFrame: CGRect(origin: .zero, size: geometrySize))
+        
+        // Convert view points back to image coordinates
+        let imagePoints = convertPointsFromViewToImage(cornerPoints, imageExtent: imageExtent, viewFrame: CGRect(origin: .zero, size: geometrySize))
+        
+        let correction = ImageAdjustments.PerspectiveCorrection(
             points: imagePoints,
-            imageSize: CGSize(width: inputImage.extent.width, height: inputImage.extent.height)
+            imageSize: imageExtent.size
         )
-        Task { await viewModel.processImage() }
+        // Set the correction on the *current* adjustments
+        viewModel.currentAdjustments.perspectiveCorrection = correction 
+        // The processImage call is now implicitly handled by the setter of currentAdjustments
+        // Task { await viewModel.processImage() } // No longer needed here
+        logger.info("Applied perspective crop.")
     }
 }

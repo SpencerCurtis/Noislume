@@ -107,8 +107,7 @@ struct InversionView: View {
             queue: .main
         ) { [viewModel] _ in
             Task { @MainActor in
-                viewModel.imageModel.adjustments = .init()
-                await viewModel.processImage()
+                viewModel.currentAdjustments = ImageAdjustments()
             }
         }
     }

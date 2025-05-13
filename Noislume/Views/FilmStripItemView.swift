@@ -9,8 +9,8 @@ struct FilmStripItemView: View {
     var body: some View {
         // Determine loading state and thumbnail from ViewModel
         let isLoading = viewModel.isLoadingThumbnail[imageURL] ?? false
-        // Retrieve NSImage from NSCache
-        let nsImage = viewModel.thumbnailCache.object(forKey: imageURL as NSURL)
+        // Retrieve NSImage using the helper method on ViewModel
+        let nsImage = viewModel.getCachedThumbnail(for: imageURL)
 
         VStack {
             Group {

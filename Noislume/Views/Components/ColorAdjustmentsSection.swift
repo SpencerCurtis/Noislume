@@ -1,59 +1,42 @@
-
 import SwiftUI
 
 struct ColorAdjustmentsSection: View {
-    @ObservedObject var viewModel: InversionViewModel
+    @Binding var adjustments: ImageAdjustments
     @Binding var isExpanded: Bool
-    
+    var isDisabled: Bool
+
     var body: some View {
         CollapsibleSection(title: "Color Adjustments", isExpanded: $isExpanded) {
-            VStack(spacing: 16) {
-                AdjustmentSlider(
-                    value: $viewModel.imageModel.adjustments.temperature,
-                    title: "Temperature",
-                    range: 2000...20000,
-                    isDisabled: viewModel.imageModel.rawImageURL == nil
-                ) {
-                    Task { await viewModel.processImage() }
+            VStack {
+                // Example: Temperature Slider
+                HStack {
+                    Text("Temp")
+                    Slider(value: $adjustments.temperature, in: 2000...50000)
+                    Text("\(adjustments.temperature, specifier: "%.0f")K")
+                        .frame(width: 60, alignment: .trailing)
                 }
                 
-                AdjustmentSlider(
-                    value: $viewModel.imageModel.adjustments.tint,
-                    title: "Tint",
-                    range: -150...150,
-                    isDisabled: viewModel.imageModel.rawImageURL == nil
-                ) {
-                    Task { await viewModel.processImage() }
+                // Example: Tint Slider
+                HStack {
+                    Text("Tint")
+                    Slider(value: $adjustments.tint, in: -150...150)
+                    Text("\(adjustments.tint, specifier: "%.0f")")
+                        .frame(width: 60, alignment: .trailing)
                 }
                 
-                AdjustmentSlider(
-                    value: $viewModel.imageModel.adjustments.exposure,
-                    title: "Exposure",
-                    range: -1...1,
-                    isDisabled: viewModel.imageModel.rawImageURL == nil
-                ) {
-                    Task { await viewModel.processImage() }
+                // Add other sliders for exposure, contrast, brightness, etc.
+                // Bind directly to properties of the 'adjustments' binding.
+                HStack {
+                    Text("Expo")
+                    Slider(value: $adjustments.exposure, in: -4...4)
+                    Text("\(adjustments.exposure, specifier: "%.2f")")
+                        .frame(width: 60, alignment: .trailing)
                 }
                 
-                AdjustmentSlider(
-                    value: $viewModel.imageModel.adjustments.brightness,
-                    title: "Brightness",
-                    range: -1...1,
-                    isDisabled: viewModel.imageModel.rawImageURL == nil
-                ) {
-                    Task { await viewModel.processImage() }
-                }
+                // ... Add sliders for contrast, brightness, highlights, shadows, vibrance, saturation ...
                 
-                AdjustmentSlider(
-                    value: $viewModel.imageModel.adjustments.contrast,
-                    title: "Contrast",
-                    range: 0.25...4,
-                    isDisabled: viewModel.imageModel.rawImageURL == nil
-                ) {
-                    Task { await viewModel.processImage() }
-                }
             }
-            .padding(.top, 8)
+            .disabled(isDisabled)
         }
     }
 }

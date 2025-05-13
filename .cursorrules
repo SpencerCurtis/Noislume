@@ -5,10 +5,10 @@
 
 ## Project Structure
 - Follow the established directory structure:
-  - Views/ for SwiftUI views
-  - ViewModels/ for view models
-  - Models/ for data models
-  - Utils/ for utility classes
+  - Noislume/Views/ for SwiftUI views
+  - Noislume/ViewModels/ for view models
+  - Noislume/Models/ for data models
+  - Noislume/Utils/ for utility classes
 
 ## Development Guidelines
 - Use SwiftUI for UI components

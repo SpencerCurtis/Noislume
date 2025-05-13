@@ -69,7 +69,6 @@ class MainMenuManager {
         addSeparator(to: appMenu)
         addItem(to: appMenu, title: "Settings...", action: #selector(AppDelegate.showSettings), keyEquivalent: ",", keyEquivalentModifierMask: .command)
         addSeparator(to: appMenu)
-
         addItem(to: appMenu, title: "Services", action: nil) { menuItem in
             let servicesMenu = NSMenu(title: "Services")
             menuItem.submenu = servicesMenu
@@ -77,11 +76,11 @@ class MainMenuManager {
         }
         
         addSeparator(to: appMenu)
-        addItem(to: appMenu, title: "Hide Noislume", action: #selector(NSApplication.hide(_:)), keyEquivalent: "h")
+        addItem(to: appMenu, title: "Hide Noislume", action: #selector(NSApplication.hide(_:)), keyEquivalent: "h", keyEquivalentModifierMask: .command)
         addItem(to: appMenu, title: "Hide Others", action: #selector(NSApplication.hideOtherApplications(_:)), keyEquivalent: "h", keyEquivalentModifierMask: [.command, .option])
         addItem(to: appMenu, title: "Show All", action: #selector(NSApplication.unhideAllApplications(_:)))
         addSeparator(to: appMenu)
-        addItem(to: appMenu, title: "Quit Noislume", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q")
+        addItem(to: appMenu, title: "Quit Noislume", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q", keyEquivalentModifierMask: .command)
         
         return appMenuItem
     }

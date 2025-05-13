@@ -49,9 +49,6 @@ struct EditingSidebar: View {
             Spacer()
             
             HStack(spacing: 8) {
-                Button("Load RAW") {
-                    showFileImporter = true
-                }
                 
                 Button("Export") {
                     showExporter = true

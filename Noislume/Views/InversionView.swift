@@ -19,7 +19,11 @@ struct InversionView: View {
     
     var body: some View {
         HStack(spacing: 0) {
-            CroppingView(viewModel: viewModel, showCropOverlay: $showCropOverlay)
+            CroppingView(
+                viewModel: viewModel,
+                showCropOverlay: $showCropOverlay,
+                showFileImporter: $showFileImporter
+            )
                 .frame(maxWidth: .infinity)
             
             EditingSidebar(

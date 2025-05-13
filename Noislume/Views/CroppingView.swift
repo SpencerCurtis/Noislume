@@ -17,6 +17,7 @@ struct CroppingView: View {
     @ObservedObject var viewModel: InversionViewModel
     @EnvironmentObject var settings: AppSettings
     @Binding var showCropOverlay: Bool
+    @Binding var showFileImporter: Bool
     
     @State private var cornerPoints: [CGPoint] = []
     @State private var storedPerspectiveCorrection: ImageAdjustments.PerspectiveCorrection? = nil
@@ -230,8 +231,21 @@ struct CroppingView: View {
                 if let imageToDisplay = renderedSwiftUIImage {
                     image(imageToDisplay: imageToDisplay, geo: geo)
                 } else {
-                    Text("No image loaded")
-                        .frame(maxHeight: .infinity)
+                    VStack(spacing: 20) {
+                        Text("No image loaded")
+                            .font(.title2)
+                            .foregroundColor(.secondary)
+                        
+                        Button {
+                            showFileImporter = true
+                        } label: {
+                            Label("Load RAW Image", systemImage: "photo.on.rectangle.angled")
+                                .font(.headline)
+                        }
+                        .controlSize(.large)
+                        .buttonStyle(.borderedProminent)
+                    }
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
                 }
             }
             .onAppear {

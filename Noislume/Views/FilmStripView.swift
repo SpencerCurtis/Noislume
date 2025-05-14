@@ -6,7 +6,7 @@ struct FilmStripView: View {
     var body: some View {
         if !viewModel.imageFileQueue.isEmpty {
             ScrollView(.horizontal, showsIndicators: true) {
-                HStack(spacing: 8) {
+                LazyHStack(spacing: 8) {
                     ForEach(Array(viewModel.imageFileQueue.enumerated()), id: \.element) { index, url in
                         FilmStripItemView(
                             viewModel: viewModel,

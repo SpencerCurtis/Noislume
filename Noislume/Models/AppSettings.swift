@@ -30,6 +30,8 @@ class AppSettings: ObservableObject {
     @AppStorage("enableThumbnailFileCache") var enableThumbnailFileCache: Bool = true
     @AppStorage("thumbnailCacheSizeLimitMB") var thumbnailCacheSizeLimitMB: Int = 500 // Default 500MB
     
+    @AppStorage("independentCornerDragModifierRawValue") var independentCornerDragModifierRawValue: Int = Int(NSEvent.ModifierFlags.command.rawValue)
+
     init() {
         // Default to 5% if no value is saved
         self.cropInsetPercentage = UserDefaults.standard.double(forKey: "cropInsetPercentage").nonZeroValue ?? 5.0

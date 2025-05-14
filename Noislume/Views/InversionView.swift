@@ -25,7 +25,8 @@ struct InversionView: View {
                     showCropOverlay: $showCropOverlay,
                     showFileImporter: $showFileImporter
                 )
-                    .frame(maxWidth: .infinity)
+                .padding()
+                .frame(maxWidth: .infinity)
                 
                 EditingSidebar(
                     viewModel: viewModel,

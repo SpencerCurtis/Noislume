@@ -166,7 +166,7 @@ class ThumbnailCacheManager {
         }
         
         // Log the directory being checked
-        logger.debug("Enforcing size limit: Checking directory at \(dirURL.path)")
+//        logger.debug("Enforcing size limit: Checking directory at \(dirURL.path)")
 
         let maxSizeInBytes = Int64(appSettings.thumbnailCacheSizeLimitMB) * 1024 * 1024
         var currentSize: Int64 = 0
@@ -222,7 +222,7 @@ class ThumbnailCacheManager {
             }
 
         } catch {
-            logger.error("Error enforcing thumbnail cache size limit: \(error.localizedDescription)")
+//            logger.error("Error enforcing thumbnail cache size limit: \(error.localizedDescription)")
         }
     }
 } 

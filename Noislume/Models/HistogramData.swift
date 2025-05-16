@@ -9,8 +9,8 @@ struct HistogramData {
     let g: [Float]
     /// Pixel counts for each intensity bin of the Blue channel.
     let b: [Float]
-    // Optional: Add a luminance histogram if needed later
-    // let l: [Float]?
+    /// Optional: Pixel counts for each intensity bin of the Luminance channel.
+    let l: [Float]?
 
     /// The number of bins in each channel's histogram (e.g., 256).
     var binCount: Int {
@@ -20,11 +20,11 @@ struct HistogramData {
 
     /// An empty state for the histogram data.
     static var empty: HistogramData {
-        HistogramData(r: [], g: [], b: [])
+        HistogramData(r: [], g: [], b: [], l: nil)
     }
 
     /// Checks if the histogram data is empty.
     var isEmpty: Bool {
-        r.isEmpty && g.isEmpty && b.isEmpty
+        r.isEmpty && g.isEmpty && b.isEmpty && (l?.isEmpty ?? true)
     }
 } 

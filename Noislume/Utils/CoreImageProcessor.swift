@@ -126,7 +126,45 @@ actor CoreImageProcessor {
             histB[i] = floatHistogramData[i * 4 + 2]
         }
         
-        return HistogramData(r: histR, g: histG, b: histB)
+        // Generate Luminance Histogram
+        var histL: [Float]? = nil
+        let colorControls = CIFilter.colorControls()
+        colorControls.inputImage = image
+        colorControls.saturation = 0 // Convert to grayscale
+        colorControls.brightness = 0
+        colorControls.contrast = 1
+        
+        if let grayscaleImage = colorControls.outputImage {
+            let luminanceHistogramFilter = CIFilter.areaHistogram()
+            luminanceHistogramFilter.inputImage = grayscaleImage
+            luminanceHistogramFilter.extent = imageExtent // Use original extent
+            luminanceHistogramFilter.scale = 1.0
+            luminanceHistogramFilter.count = histogramBinCount
+            
+            if let lumHistOutput = luminanceHistogramFilter.outputImage {
+                var lumFloatData = [Float32](repeating: 0, count: histogramBinCount * 4)
+                self.context.render(lumHistOutput,
+                                      toBitmap: &lumFloatData,
+                                      rowBytes: histogramBinCount * 4 * MemoryLayout<Float32>.stride,
+                                      bounds: histogramRenderRect,
+                                      format: .RGBAf,
+                                      colorSpace: nil)
+                
+                var currentHistL = [Float](repeating: 0, count: histogramBinCount)
+                for i in 0..<histogramBinCount {
+                    // For grayscale, R, G, and B components should be the same.
+                    // We can just take one, e.g., Red component as luminance intensity count.
+                    currentHistL[i] = lumFloatData[i * 4 + 0] 
+                }
+                histL = currentHistL
+            } else {
+                print("CoreImageProcessor.generateHistogram: Failed to generate luminance histogram output image.")
+            }
+        } else {
+            print("CoreImageProcessor.generateHistogram: Failed to create grayscale image for luminance histogram.")
+        }
+        
+        return HistogramData(r: histR, g: histG, b: histB, l: histL)
     }
     
     func processRAWImage(fileURL: URL, adjustments: ImageAdjustments, mode: ProcessingMode, processUntilFilterOfType: Any.Type? = nil) async throws -> (processedImage: CIImage?, histogramData: HistogramData?) {

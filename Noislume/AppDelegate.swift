@@ -18,16 +18,22 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSToolbarDelegate, Observabl
     }
 
     func applicationDidFinishLaunching(_ notification: Notification) {
-        let windowController = NSWindowController(
-            window: NSWindow(
-                contentRect: NSRect(x: 0, y: 0, width: 800, height: 600),
-                styleMask: [.titled, .closable, .miniaturizable, .resizable],
-                backing: .buffered,
-                defer: false
-            )
-        )
+        let defaultRect = NSRect(x: 0, y: 0, width: 800, height: 600)
 
-        windowController.window?.center()
+        let window = NSWindow(
+            contentRect: defaultRect,
+            styleMask: [.titled, .closable, .miniaturizable, .resizable],
+            backing: .buffered,
+            defer: false
+        )
+        let frameAutosaveName = "com.SpencerCurtis.Noislume.MainWindowFrame"
+
+        let windowController = NSWindowController(window: window)
+        windowController.windowFrameAutosaveName = frameAutosaveName
+
+        if !window.setFrameUsingName(frameAutosaveName) {
+            window.center()
+        }
 
         let contentView = ContentView()
             .environmentObject(settings)

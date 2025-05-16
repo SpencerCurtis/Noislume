@@ -60,6 +60,8 @@ class InversionViewModel: ObservableObject {
     @Published private(set) var processedImage: NSImage?
     @Published private(set) var originalImage: CIImage? // Store the original CIImage for reprocessing
     
+    @Published var currentHistogramData: HistogramData? = nil // To store histogram data
+    
     init() {
         // Initialize ThumbnailCacheManager with AppSettings
         self.thumbnailFileCacheManager = ThumbnailCacheManager(appSettings: appSettings)
@@ -147,6 +149,100 @@ class InversionViewModel: ObservableObject {
         }
     }
     
+    // MARK: - Computed Properties for ColorCastRefinementControls
+
+//    var applyMidtoneNeutralization: Bool {
+//        get { currentAdjustments.applyMidtoneNeutralization }
+//        set {
+//            objectWillChange.send() // Ensures UI updates if this property is directly observed elsewhere
+//            var newAdjustments = currentAdjustments
+//            newAdjustments.applyMidtoneNeutralization = newValue
+//            currentAdjustments = newAdjustments // This setter handles persistence and reprocessing
+//        }
+//    }
+
+
+//
+//    var shadowTintColor: Color {
+//        get { currentAdjustments.shadowTintColor.swiftUIColor } // Convert from CodableColor
+//        set {
+//            objectWillChange.send()
+//            var newAdjustments = currentAdjustments
+//            newAdjustments.shadowTintColor = CodableColor(color: NSColor(newValue)) // Convert to CodableColor
+//            currentAdjustments = newAdjustments
+//        }
+//    }
+//
+//    var shadowTintStrength: Double {
+//        get { currentAdjustments.shadowTintStrength }
+//        set {
+//            objectWillChange.send()
+//            var newAdjustments = currentAdjustments
+//            newAdjustments.shadowTintStrength = newValue
+//            currentAdjustments = newAdjustments
+//        }
+//    }
+//
+//    var highlightTintColor: Color {
+//        get { currentAdjustments.highlightTintColor.swiftUIColor } // Convert from CodableColor
+//        set {
+//            objectWillChange.send()
+//            var newAdjustments = currentAdjustments
+//            newAdjustments.highlightTintColor = CodableColor(color: NSColor(newValue)) // Convert to CodableColor
+//            currentAdjustments = newAdjustments
+//        }
+//    }
+//
+//    var highlightTintStrength: Double {
+//        get { currentAdjustments.highlightTintStrength }
+//        set {
+//            objectWillChange.send()
+//            var newAdjustments = currentAdjustments
+//            newAdjustments.highlightTintStrength = newValue
+//            currentAdjustments = newAdjustments
+//        }
+//    }
+//    
+//    var targetCyanHueRangeCenter: Double {
+//        get { currentAdjustments.targetCyanHueRangeCenter }
+//        set {
+//            objectWillChange.send()
+//            var newAdjustments = currentAdjustments
+//            newAdjustments.targetCyanHueRangeCenter = newValue
+//            currentAdjustments = newAdjustments
+//        }
+//    }
+//
+//    var targetCyanHueRangeWidth: Double {
+//        get { currentAdjustments.targetCyanHueRangeWidth }
+//        set {
+//            objectWillChange.send()
+//            var newAdjustments = currentAdjustments
+//            newAdjustments.targetCyanHueRangeWidth = newValue
+//            currentAdjustments = newAdjustments
+//        }
+//    }
+//
+//    var targetCyanSaturationAdjustment: Double {
+//        get { currentAdjustments.targetCyanSaturationAdjustment }
+//        set {
+//            objectWillChange.send()
+//            var newAdjustments = currentAdjustments
+//            newAdjustments.targetCyanSaturationAdjustment = newValue
+//            currentAdjustments = newAdjustments
+//        }
+//    }
+//
+//    var targetCyanBrightnessAdjustment: Double {
+//        get { currentAdjustments.targetCyanBrightnessAdjustment }
+//        set {
+//            objectWillChange.send()
+//            var newAdjustments = currentAdjustments
+//            newAdjustments.targetCyanBrightnessAdjustment = newValue
+//            currentAdjustments = newAdjustments
+//        }
+//    }
+    
     func loadInitialImageSet(urls: [URL]) {
         guard !urls.isEmpty else {
             print("No URLs provided to loadInitialImageSet.")
@@ -232,22 +328,27 @@ class InversionViewModel: ObservableObject {
                 }
                 print("loadAndProcessImage: Using processing mode: \(currentProcessingMode)")
 
-                guard let processedImage = try await self.processor.processRAWImage(
+                // Updated to handle tuple return
+                let result = try await self.processor.processRAWImage(
                     fileURL: url,
                     adjustments: adjustmentsForProcessing, 
-                    mode: currentProcessingMode, // Updated to use ProcessingMode
-                    processUntilFilterOfType: nil // Not stopping early for initial load
-                ) else {
+                    mode: currentProcessingMode,
+                    processUntilFilterOfType: nil
+                )
+                
+                guard let processedImage = result.processedImage else {
                     print("Failed to process RAW image at URL: \(url.path)")
                     self.errorMessage = "Failed to load RAW image"
                     self.isProcessing = false
                     self.isInitiallyLoadingImage = false
-                    self.currentImageModel.processedImage = nil // Reset display model image
+                    self.currentImageModel.processedImage = nil
+                    self.currentHistogramData = nil // Clear histogram data on failure
                     return
                 }
                 
                 self.isProcessing = false
-                self.currentImageModel.processedImage = processedImage // Update display model image
+                self.currentImageModel.processedImage = processedImage
+                self.currentHistogramData = result.histogramData // Store histogram data
                 self.isInitiallyLoadingImage = false
                 // Active index is already set by the navigator at the start of the function
                 
@@ -260,6 +361,7 @@ class InversionViewModel: ObservableObject {
             } catch {
                 self.isProcessing = false
                 self.isInitiallyLoadingImage = false
+                self.currentHistogramData = nil // Clear histogram data on error
                 guard !(error is CancellationError) else {
                     self.currentImageModel.processedImage = nil // Explicitly set to nil on cancellation
                     return
@@ -309,22 +411,28 @@ class InversionViewModel: ObservableObject {
                 print("processImage (re-processing): Using processing mode: \(currentProcessingMode)")
 
                 // Use the existing shared processor instance
-                guard let processedImage = try await processor.processRAWImage(
+                // Updated to handle tuple return
+                let result = try await processor.processRAWImage(
                     fileURL: fileURL,
                     adjustments: adjustments, 
-                    mode: currentProcessingMode, // Updated to use ProcessingMode
-                    processUntilFilterOfType: nil // Not stopping early for general re-process
-                ) else {
+                    mode: currentProcessingMode,
+                    processUntilFilterOfType: nil
+                )
+                
+                guard let processedImage = result.processedImage else {
                     print("Failed to re-process RAW image at URL: \(fileURL.path)")
                     errorMessage = "Failed to re-process RAW image"
                     isProcessing = false
+                    currentHistogramData = nil // Clear histogram data on failure
                     return
                 }
                 
                 isProcessing = false
                 currentImageModel.processedImage = processedImage // Update the display model
+                currentHistogramData = result.histogramData // Store histogram data
             } catch {
                 isProcessing = false
+                currentHistogramData = nil // Clear histogram data on error
                 guard !(error is CancellationError) else {
                     print("Image processing task cancelled for \(fileURL.lastPathComponent).")
                     return
@@ -586,14 +694,15 @@ class InversionViewModel: ObservableObject {
         do {
             // Get the image state *before* the PositiveColorGradeFilter is applied.
             // This ensures we sample the color before the current positive temp/tint affect it.
-            let imageForSampling = try await processor.processRAWImage(
+            // Updated to handle tuple return, though histogram data is not used here directly
+            let result = try await processor.processRAWImage(
                 fileURL: url,
                 adjustments: currentAdjustments, // Current adjustments up to this point
                 mode: .full, // Use .full mode to allow processUntilFilterOfType
                 processUntilFilterOfType: PositiveColorGradeFilter.self // Stop BEFORE this filter
             )
 
-            if let imageToSampleFrom = imageForSampling {
+            if let imageToSampleFrom = result.processedImage { // Use .processedImage from tuple
                 // The imagePoint for white balance is also from the view, so it also needs transformation.
                 // However, the `imageToSampleFrom` here might have different dimensions/extent
                 // than the one used for film base sampling (which is applyFullFilterChain: false).
@@ -758,6 +867,108 @@ class InversionViewModel: ObservableObject {
     }
 
     // MARK: - Image Loading and Processing
+
+    // MARK: - Computed Properties for ColorCastRefinementControls
+
+    var applyMidtoneNeutralization: Bool {
+        get { currentAdjustments.applyMidtoneNeutralization }
+        set {
+            objectWillChange.send()
+            var newAdjustments = currentAdjustments
+            newAdjustments.applyMidtoneNeutralization = newValue
+            currentAdjustments = newAdjustments
+        }
+    }
+
+    var midtoneNeutralizationStrength: Double {
+        get { currentAdjustments.midtoneNeutralizationStrength }
+        set {
+            objectWillChange.send()
+            var newAdjustments = currentAdjustments
+            newAdjustments.midtoneNeutralizationStrength = newValue
+            currentAdjustments = newAdjustments
+        }
+    }
+
+    var shadowTintColor: Color {
+        get { currentAdjustments.shadowTintColor.swiftUIColor }
+        set {
+            objectWillChange.send()
+            var newAdjustments = currentAdjustments
+            newAdjustments.shadowTintColor = CodableColor(color: NSColor(newValue))
+            currentAdjustments = newAdjustments
+        }
+    }
+
+    var shadowTintStrength: Double {
+        get { currentAdjustments.shadowTintStrength }
+        set {
+            objectWillChange.send()
+            var newAdjustments = currentAdjustments
+            newAdjustments.shadowTintStrength = newValue
+            currentAdjustments = newAdjustments
+        }
+    }
+
+    var highlightTintColor: Color {
+        get { currentAdjustments.highlightTintColor.swiftUIColor }
+        set {
+            objectWillChange.send()
+            var newAdjustments = currentAdjustments
+            newAdjustments.highlightTintColor = CodableColor(color: NSColor(newValue))
+            currentAdjustments = newAdjustments
+        }
+    }
+
+    var highlightTintStrength: Double {
+        get { currentAdjustments.highlightTintStrength }
+        set {
+            objectWillChange.send()
+            var newAdjustments = currentAdjustments
+            newAdjustments.highlightTintStrength = newValue
+            currentAdjustments = newAdjustments
+        }
+    }
+    
+    var targetCyanHueRangeCenter: Double {
+        get { currentAdjustments.targetCyanHueRangeCenter }
+        set {
+            objectWillChange.send()
+            var newAdjustments = currentAdjustments
+            newAdjustments.targetCyanHueRangeCenter = newValue
+            currentAdjustments = newAdjustments
+        }
+    }
+
+    var targetCyanHueRangeWidth: Double {
+        get { currentAdjustments.targetCyanHueRangeWidth }
+        set {
+            objectWillChange.send()
+            var newAdjustments = currentAdjustments
+            newAdjustments.targetCyanHueRangeWidth = newValue
+            currentAdjustments = newAdjustments
+        }
+    }
+
+    var targetCyanSaturationAdjustment: Double {
+        get { currentAdjustments.targetCyanSaturationAdjustment }
+        set {
+            objectWillChange.send()
+            var newAdjustments = currentAdjustments
+            newAdjustments.targetCyanSaturationAdjustment = newValue
+            currentAdjustments = newAdjustments
+        }
+    }
+
+    var targetCyanBrightnessAdjustment: Double {
+        get { currentAdjustments.targetCyanBrightnessAdjustment }
+        set {
+            objectWillChange.send()
+            var newAdjustments = currentAdjustments
+            newAdjustments.targetCyanBrightnessAdjustment = newValue
+            currentAdjustments = newAdjustments
+        }
+    }
 }
 
 // ExportDocument struct and ExportError enum were moved to their own files.

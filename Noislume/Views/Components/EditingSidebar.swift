@@ -21,6 +21,13 @@ struct EditingSidebar: View {
                 .pickerStyle(.segmented) // Or .menu for a dropdown
                 .padding(.bottom, 8) // Add some spacing
 
+                // Histogram View
+                Section("Histogram") { // Using Section for collapsibility and title
+                    HistogramView(histogramData: viewModel.currentHistogramData)
+                }
+                .collapsible(true) // Allow the section to be collapsed if desired
+                .padding(.bottom, 8)
+
                 CroppingSection(
                     viewModel: viewModel,
                     isExpanded: $isCroppingExpanded,

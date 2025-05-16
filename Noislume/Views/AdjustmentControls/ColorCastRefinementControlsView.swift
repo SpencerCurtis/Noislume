@@ -1,9 +1,7 @@
 import SwiftUI
 
 struct ColorCastRefinementControlsView: View {
-    @Binding var adjustments: ImageAdjustments
-    // Access to ViewModel is needed if we want to trigger image reprocessing directly
-    // For now, changes to @Binding adjustments should trigger it via onChange in InversionViewModel
+    @ObservedObject var viewModel: InversionViewModel // Changed from @Binding
 
     // State for collapsible sections
     @State private var isMidtoneNeutralizationExpanded = true
@@ -20,36 +18,28 @@ struct ColorCastRefinementControlsView: View {
             // Midtone Neutralization
             CollapsibleSection(isExpanded: $isMidtoneNeutralizationExpanded, title: "Midtone Neutralization") {
                 VStack {
-                    Toggle("Apply Midtone Neutralization", isOn: $adjustments.applyMidtoneNeutralization)
+                    Toggle("Apply Midtone Neutralization", isOn: $viewModel.applyMidtoneNeutralization)
                     
                     HStack {
                         Text("Strength")
-                        Slider(value: $adjustments.midtoneNeutralizationStrength, in: 0.0...1.0, step: 0.01)
-                        Text("\(adjustments.midtoneNeutralizationStrength, specifier: "%.2f")")
+                        Slider(value: $viewModel.midtoneNeutralizationStrength, in: 0.0...1.0, step: 0.01)
+                        Text("\(viewModel.midtoneNeutralizationStrength, specifier: "%.2f")")
                             .frame(width: 40, alignment: .trailing)
                     }
-                    .disabled(!adjustments.applyMidtoneNeutralization)
-                    .opacity(adjustments.applyMidtoneNeutralization ? 1 : 0.5)
+                    .disabled(!viewModel.applyMidtoneNeutralization)
+                    .opacity(viewModel.applyMidtoneNeutralization ? 1 : 0.5)
                 }
             }
             
             // Shadow Tints
             CollapsibleSection(isExpanded: $isShadowTintExpanded, title: "Shadow Tint") {
                 VStack {
-                    ColorPicker("Shadow Tint Color", selection: Binding(
-                        get: {
-                            return adjustments.shadowTintColor.swiftUIColor
-                        },
-                        set: { newValue in
-                            let nsColor = NSColor(newValue)
-                            adjustments.shadowTintColor = CodableColor(color: nsColor)
-                        }
-                    ), supportsOpacity: true)
+                    ColorPicker("Shadow Tint Color", selection: $viewModel.shadowTintColor, supportsOpacity: true)
                     
                     HStack {
                         Text("Strength")
-                        Slider(value: $adjustments.shadowTintStrength, in: 0.0...1.0, step: 0.01)
-                        Text("\(adjustments.shadowTintStrength, specifier: "%.2f")")
+                        Slider(value: $viewModel.shadowTintStrength, in: 0.0...1.0, step: 0.01)
+                        Text("\(viewModel.shadowTintStrength, specifier: "%.2f")")
                             .frame(width: 40, alignment: .trailing)
                     }
                 }
@@ -58,20 +48,12 @@ struct ColorCastRefinementControlsView: View {
             // Highlight Tints
             CollapsibleSection(isExpanded: $isHighlightTintExpanded, title: "Highlight Tint") {
                 VStack {
-                    ColorPicker("Highlight Tint Color", selection: Binding(
-                        get: {
-                            return adjustments.highlightTintColor.swiftUIColor
-                        },
-                        set: { newValue in
-                            let nsColor = NSColor(newValue)
-                            adjustments.highlightTintColor = CodableColor(color: nsColor)
-                        }
-                    ), supportsOpacity: true)
+                    ColorPicker("Highlight Tint Color", selection: $viewModel.highlightTintColor, supportsOpacity: true)
                     
                     HStack {
                         Text("Strength")
-                        Slider(value: $adjustments.highlightTintStrength, in: 0.0...1.0, step: 0.01)
-                        Text("\(adjustments.highlightTintStrength, specifier: "%.2f")")
+                        Slider(value: $viewModel.highlightTintStrength, in: 0.0...1.0, step: 0.01)
+                        Text("\(viewModel.highlightTintStrength, specifier: "%.2f")")
                             .frame(width: 40, alignment: .trailing)
                     }
                 }
@@ -85,26 +67,26 @@ struct ColorCastRefinementControlsView: View {
                     
                     HStack {
                         Text("Hue Center (°)")
-                        Slider(value: $adjustments.targetCyanHueRangeCenter, in: 0...360, step: 1)
-                        Text("\(adjustments.targetCyanHueRangeCenter, specifier: "%.0f")")
+                        Slider(value: $viewModel.targetCyanHueRangeCenter, in: 0...360, step: 1)
+                        Text("\(viewModel.targetCyanHueRangeCenter, specifier: "%.0f")")
                             .frame(width: 40, alignment: .trailing)
                     }
                     HStack {
                         Text("Hue Width (°)")
-                        Slider(value: $adjustments.targetCyanHueRangeWidth, in: 0...90, step: 1)
-                        Text("\(adjustments.targetCyanHueRangeWidth, specifier: "%.0f")")
+                        Slider(value: $viewModel.targetCyanHueRangeWidth, in: 0...90, step: 1)
+                        Text("\(viewModel.targetCyanHueRangeWidth, specifier: "%.0f")")
                             .frame(width: 40, alignment: .trailing)
                     }
                     HStack {
                         Text("Saturation Adj.")
-                        Slider(value: $adjustments.targetCyanSaturationAdjustment, in: -1.0...1.0, step: 0.01)
-                        Text("\(adjustments.targetCyanSaturationAdjustment, specifier: "%.2f")")
+                        Slider(value: $viewModel.targetCyanSaturationAdjustment, in: -1.0...1.0, step: 0.01)
+                        Text("\(viewModel.targetCyanSaturationAdjustment, specifier: "%.2f")")
                             .frame(width: 40, alignment: .trailing)
                     }
                     HStack {
                         Text("Brightness Adj.")
-                        Slider(value: $adjustments.targetCyanBrightnessAdjustment, in: -1.0...1.0, step: 0.01)
-                        Text("\(adjustments.targetCyanBrightnessAdjustment, specifier: "%.2f")")
+                        Slider(value: $viewModel.targetCyanBrightnessAdjustment, in: -1.0...1.0, step: 0.01)
+                        Text("\(viewModel.targetCyanBrightnessAdjustment, specifier: "%.2f")")
                             .frame(width: 40, alignment: .trailing)
                     }
                 }
@@ -113,13 +95,3 @@ struct ColorCastRefinementControlsView: View {
         .padding(.vertical)
     }
 }
-
-struct ColorCastRefinementControlsView_Previews: PreviewProvider {
-    static var previews: some View {
-        // Create a State variable for the binding
-        @State var adjustments = ImageAdjustments()
-        ColorCastRefinementControlsView(adjustments: $adjustments)
-            .padding()
-            .frame(width: 280)
-    }
-} 

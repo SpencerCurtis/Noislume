@@ -11,14 +11,13 @@ enum ProcessingMode {
 }
 
 actor CoreImageProcessor {
-    private var currentTask: Task<CIImage?, Error>?
+    private var currentTask: Task<(processedImage: CIImage?, histogramData: HistogramData?), Error>?
     
     private let v1FilterChain: [ImageFilter] // Renamed from filterChain
     private let v2FilterChain: [ImageFilter] // New for V2
 
     private let context: CIContext // For all CIImage rendering
     private let filterQueue = DispatchQueue(label: "com.SpencerCurtis.Noislume.CoreImageFilterQueue", qos: .userInitiated)
-    private let ciContext: CIContext // Consider options
 
     static let shared = CoreImageProcessor()
     
@@ -85,24 +84,61 @@ actor CoreImageProcessor {
             CIContextOption.outputColorSpace: CGColorSpace(name: CGColorSpace.sRGB)!,
         ]
         self.context = CIContext(options: commonOptions)
-
-        let ciContextOptions: [CIContextOption: Any] = commonOptions.merging([
-            CIContextOption.cacheIntermediates: false,
-            CIContextOption.allowLowPower: true,
-        ]) { (_, new) in new }
-        self.ciContext = CIContext(options: ciContextOptions)
     }
     
-    func processRAWImage(fileURL: URL, adjustments: ImageAdjustments, mode: ProcessingMode, processUntilFilterOfType: Any.Type? = nil) async throws -> CIImage? {
+    private func generateHistogram(for image: CIImage) -> HistogramData? {
+        let imageExtent = image.extent
+        guard !imageExtent.isInfinite, !imageExtent.isEmpty else {
+            print("CoreImageProcessor.generateHistogram: Input image has invalid extent (\(imageExtent)).")
+            return nil
+        }
+
+        let histogramFilter = CIFilter.areaHistogram()
+        histogramFilter.inputImage = image
+        histogramFilter.extent = imageExtent
+        histogramFilter.scale = 1.0 
+        let histogramBinCount = 256
+        histogramFilter.count = histogramBinCount
+        
+        guard let histogramOutputImage = histogramFilter.outputImage else {
+            print("CoreImageProcessor.generateHistogram: Failed to generate histogram image.")
+            return nil
+        }
+
+        var floatHistogramData = [Float32](repeating: 0, count: histogramBinCount * 4) // RGBA
+        let histogramRenderRect = CGRect(x: 0, y: 0, width: histogramBinCount, height: 1)
+
+        // Use the existing self.context
+        self.context.render(histogramOutputImage,
+                              toBitmap: &floatHistogramData,
+                              rowBytes: histogramBinCount * 4 * MemoryLayout<Float32>.stride,
+                              bounds: histogramRenderRect,
+                              format: .RGBAf, // Requesting Float32 components
+                              colorSpace: nil) // Histogram data is counts, not color-managed
+
+        var histR = [Float](repeating: 0, count: histogramBinCount)
+        var histG = [Float](repeating: 0, count: histogramBinCount)
+        var histB = [Float](repeating: 0, count: histogramBinCount)
+
+        for i in 0..<histogramBinCount {
+            histR[i] = floatHistogramData[i * 4 + 0]
+            histG[i] = floatHistogramData[i * 4 + 1]
+            histB[i] = floatHistogramData[i * 4 + 2]
+        }
+        
+        return HistogramData(r: histR, g: histG, b: histB)
+    }
+    
+    func processRAWImage(fileURL: URL, adjustments: ImageAdjustments, mode: ProcessingMode, processUntilFilterOfType: Any.Type? = nil) async throws -> (processedImage: CIImage?, histogramData: HistogramData?) {
         currentTask?.cancel()
         
-        let task = Task<CIImage?, Error> {
+        let task = Task<(processedImage: CIImage?, histogramData: HistogramData?), Error> {
             try Task.checkCancellation()
             
             guard let rawFilter = CIRAWFilter(imageURL: fileURL) else {
                 // Consider throwing a specific error here
                 print("Error: Failed to create CIRAWFilter for \(fileURL.lastPathComponent)")
-                return nil 
+                return (nil, nil)
             }
             
             rawFilter.exposure = 0.0 // Base exposure for RAW decoding
@@ -119,21 +155,31 @@ actor CoreImageProcessor {
             
             guard let initialImage = rawFilter.outputImage ?? rawFilter.previewImage else {
                 print("Error: Failed to get image data from CIRAWFilter for \(fileURL.lastPathComponent)")
-                return nil
+                return (nil, nil)
             }
             
+            var processedImageForHistogram: CIImage? = nil
+
             switch mode {
             case .rawOnly:
-                return initialImage
+                processedImageForHistogram = initialImage
+                // Generate histogram for rawOnly mode
+                let histogram = self.generateHistogram(for: initialImage)
+                return (initialImage, histogram)
             case .geometryOnly:
                 if let geometryFilter = v2FilterChain.first(where: { $0 is GeometryFilter }) as? GeometryFilter {
                     let geometryAppliedImage = geometryFilter.applyGeometry(to: initialImage, with: adjustments, applyCrop: false)
                     try Task.checkCancellation()
-                    return geometryAppliedImage
+                    processedImageForHistogram = geometryAppliedImage
+                    // Generate histogram for geometryOnly mode
+                    let histogram = self.generateHistogram(for: geometryAppliedImage)
+                    return (geometryAppliedImage, histogram)
                 } else {
                     // This case should ideally not be reached if GeometryFilter is always in v2FilterChain
                     print("Warning: GeometryFilter not found for .geometryOnly mode. Returning raw image.")
-                    return initialImage 
+                    processedImageForHistogram = initialImage
+                    let histogram = self.generateHistogram(for: initialImage)
+                    return (initialImage, histogram)
                 }
             case .full:
                 // Continue to full filter chain processing
@@ -147,12 +193,16 @@ actor CoreImageProcessor {
             for filter in activeFilterChain {
                 if let stopType = processUntilFilterOfType, type(of: filter) == stopType {
                     // processUntilFilterOfType is only relevant for .full mode, which is implied here.
-                    return finalImage 
+                    // Generate histogram for the image up to this point
+                    let histogram = self.generateHistogram(for: finalImage)
+                    return (finalImage, histogram)
                 }
                 finalImage = filter.apply(to: finalImage, with: adjustments)
                 try Task.checkCancellation()
             }
-            return finalImage
+            // Generate histogram for the final fully processed image
+            let finalHistogram = self.generateHistogram(for: finalImage)
+            return (finalImage, finalHistogram)
         }
         
         self.currentTask = task
@@ -217,19 +267,20 @@ actor CoreImageProcessor {
     func generateThumbnail(from url: URL, targetWidth: CGFloat, adjustments: ImageAdjustments? = nil) async -> CGImage? {
         if let adjustments = adjustments {
             do {
-                guard let processedCIImage = try await self.processRAWImage(fileURL: url, adjustments: adjustments, mode: .full, processUntilFilterOfType: nil) else {
-                    return nil
-                }
+                // processRAWImage now returns a tuple, we only need the image for thumbnail
+                let (processedCIImage, _) = try await self.processRAWImage(fileURL: url, adjustments: adjustments, mode: .full, processUntilFilterOfType: nil) 
+                guard let imageToThumbnail = processedCIImage else { return nil } // Ensure image is not nil
                 
-                let scale = targetWidth / processedCIImage.extent.width
+                let scale = targetWidth / imageToThumbnail.extent.width
                 guard scale.isFinite, scale > 0 else { return nil }
                 
-                let scaledImage = processedCIImage.transformed(by: CGAffineTransform(scaleX: scale, y: scale)).samplingLinear()
+                let scaledImage = imageToThumbnail.transformed(by: CGAffineTransform(scaleX: scale, y: scale)).samplingLinear()
                 let outputRect = CGRect(origin: .zero, size: CGSize(width: targetWidth, height: scaledImage.extent.height))
                 
-                return self.ciContext.createCGImage(scaledImage, from: outputRect, format: .RGBA8, colorSpace: CGColorSpace(name: CGColorSpace.sRGB)!)
+                // Use self.context for creating CGImage
+                return self.context.createCGImage(scaledImage, from: outputRect, format: .RGBA8, colorSpace: CGColorSpace(name: CGColorSpace.sRGB)!)
             } catch {
-                // Log error appropriately
+                print("Error generating thumbnail with adjustments: \(error)")
                 return nil
             }
         }
@@ -242,7 +293,8 @@ actor CoreImageProcessor {
         guard scale.isFinite, scale > 0 else { return nil }
         let scaledImage = ciImage.transformed(by: CGAffineTransform(scaleX: scale, y: scale)).samplingLinear()
         let outputRect = CGRect(origin: .zero, size: CGSize(width: targetWidth, height: scaledImage.extent.height))
-        return self.ciContext.createCGImage(scaledImage, from: outputRect, format: .RGBA8, colorSpace: CGColorSpace(name: CGColorSpace.sRGB)!)
+        // Use self.context for creating CGImage
+        return self.context.createCGImage(scaledImage, from: outputRect, format: .RGBA8, colorSpace: CGColorSpace(name: CGColorSpace.sRGB)!)
     }
 
     func exportToTIFFData(_ image: CIImage) -> Data? {
@@ -265,39 +317,27 @@ actor CoreImageProcessor {
         return mutableData as Data?
     }
     
+    func exportToJPEGData(_ image: CIImage, compressionQuality: CGFloat = 0.9) -> Data? {
+        // Ensure the output for JPEG is sRGB.
+        // The context (self.context) is already set up with sRGB output.
+        return self.context.jpegRepresentation(of: image, colorSpace: CGColorSpace(name: CGColorSpace.sRGB)!, options: [kCGImageDestinationLossyCompressionQuality as CIImageRepresentationOption: compressionQuality])
+    }
+    
     // New method to get color at a specific point from a CIImage
     func getColor(at point: CGPoint, from image: CIImage) async -> CIColor? {
-        // Ensure the point is within the image bounds
-        let imageExtent = image.extent
-        guard imageExtent.contains(point) else {
-            print("Sample point \(point) is outside image extent \(imageExtent).")
-            return nil
-        }
-
-        // Create a 1x1 rectangle around the point to sample
-        let sampleRect = CGRect(x: point.x, y: point.y, width: 1, height: 1)
+        let pixelRect = CGRect(x: point.x, y: point.y, width: 1, height: 1)
+        var bitmap = [Float32](repeating: 0, count: 4) // RGBA, Float32
         
-        // For 32-bit float per component (RGBAf)
-        var bitmap = [Float](repeating: 0, count: 4) // RGBA, Float
-        let rowBytes = MemoryLayout<Float>.size * 4 // 4 Floats
-        
-        // Use the actor's shared context for rendering.
-        // self.context is configured for linearSRGB working space.
-        // Render to RGBAf format for high precision.
-        // Ensure the colorSpace for rendering the bitmap is linear to get the raw values.
+        // Use self.context and request .RGBAf format for Float32 components
         self.context.render(image, 
-                            toBitmap: &bitmap, 
-                            rowBytes: rowBytes, 
-                            bounds: sampleRect, 
-                            format: .RGBAf, // 32-bit float per component
-                            colorSpace: CGColorSpace(name: CGColorSpace.linearSRGB)!)
+                              toBitmap: &bitmap, 
+                              rowBytes: 4 * MemoryLayout<Float32>.stride, 
+                              bounds: pixelRect, 
+                              format: .RGBAf, // Request Float32 components
+                              colorSpace: image.colorSpace ?? CGColorSpace(name: CGColorSpace.linearSRGB)!) // Use image's colorSpace or linearSRGB
         
-        // bitmap now contains [R, G, B, A] as Float values (0.0 to 1.0 range typically for linear)
-        // No division by 255 is needed as they are already floats.
-        return CIColor(red: CGFloat(bitmap[0]),
-                       green: CGFloat(bitmap[1]),
-                       blue: CGFloat(bitmap[2]),
-                       alpha: CGFloat(bitmap[3]))
+        // Create CIColor from Float32 components. These are assumed to be linear.
+        return CIColor(red: CGFloat(bitmap[0]), green: CGFloat(bitmap[1]), blue: CGFloat(bitmap[2]), alpha: CGFloat(bitmap[3]))
     }
 }
 

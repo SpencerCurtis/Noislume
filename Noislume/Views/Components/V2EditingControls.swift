@@ -139,10 +139,7 @@ struct V2EditingControls: View {
             // NEW: Color Cast and Hue Refinement Section
             CollapsibleSection(isExpanded: $isColorCastRefinementExpanded, title: "Color Cast & Hue Refinements") {
                 VStack { // Added VStack to hold controls and button
-                    ColorCastRefinementControlsView(adjustments: Binding(
-                        get: { viewModel.currentAdjustments },
-                        set: { viewModel.currentAdjustments = $0; viewModel.triggerImageProcessing() } // Ensure processing is triggered on change
-                    ))
+                    ColorCastRefinementControlsView(viewModel: viewModel)
                     Button("Reset Color Refinements") {
                         viewModel.resetColorCastAndHueRefinements()
                     }

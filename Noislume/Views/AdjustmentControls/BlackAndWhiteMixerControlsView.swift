@@ -15,11 +15,23 @@ struct BlackAndWhiteMixerControlsView: View {
                 .padding(.bottom, 2)
 
             // isBlackAndWhite Toggle
-            Toggle("Enable Black & White", isOn: $viewModel.isBlackAndWhite)
-                .onChange(of: viewModel.isBlackAndWhite) { _ in
-                    viewModel.triggerImageProcessing()
-                }
-                .padding(.bottom, 5)
+            HStack {
+                Text("B&W Mixer")
+                Spacer()
+                Toggle("Enable B&W", isOn: $viewModel.isBlackAndWhite)
+                    .labelsHidden()
+                    .onChange(of: viewModel.isBlackAndWhite) { oldValue, newValue in
+                        // If B&W mode is toggled, reset individual color adjustments to avoid
+                        // unexpected carry-over effects if the user toggles B&W off and on.
+                        if newValue == true && oldValue == false {
+                            viewModel.currentAdjustments.bwRedContribution = 0.299
+                            viewModel.currentAdjustments.bwGreenContribution = 0.587
+                            viewModel.currentAdjustments.bwBlueContribution = 0.114
+                        }
+                        viewModel.objectWillChange.send() // Ensure UI updates
+                    }
+            }
+            .padding(.horizontal)
 
             Group {
                 // Red Contribution Slider

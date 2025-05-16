@@ -42,72 +42,62 @@ struct EdgeHandles: View {
 
     @ViewBuilder
     private func edgeHandleView(edgeIndex: Int) -> some View {
-        if cornerPoints.count == 4 {
-            let startPoint = cornerPoints[edgeIndex]
-            let endPoint = cornerPoints[(edgeIndex + 1) % 4]
+        if cornerPoints.count != 4 {
+            fatalError("EdgeHandles expects exactly 4 corner points.")
+        }
+        let startPoint = cornerPoints[edgeIndex]
+        let endPoint = cornerPoints[(edgeIndex + 1) % cornerPoints.count]
+        
+        if !startPoint.x.isNaN, !startPoint.y.isNaN, !endPoint.x.isNaN, !endPoint.y.isNaN,
+           startPoint.x.isFinite, startPoint.y.isFinite, endPoint.x.isFinite, endPoint.y.isFinite {
             
-            if !startPoint.x.isNaN, !startPoint.y.isNaN, !endPoint.x.isNaN, !endPoint.y.isNaN,
-               startPoint.x.isFinite, startPoint.y.isFinite, endPoint.x.isFinite, endPoint.y.isFinite {
+            let midPoint = midpoint(between: startPoint, and: endPoint)
+            
+            if !midPoint.x.isNaN, !midPoint.y.isNaN, midPoint.x.isFinite, midPoint.y.isFinite {
+                let shape = RoundedRectangle(cornerRadius: 2)
+                let baseHandleSize = CGSize(width: 20, height: 6)
+                let isHorizontal = (edgeIndex % 2 == 0)
                 
-                let midPoint = midpoint(between: startPoint, and: endPoint)
-
-                if !midPoint.x.isNaN, !midPoint.y.isNaN, midPoint.x.isFinite, midPoint.y.isFinite {
-                    let shape = RoundedRectangle(cornerRadius: 2)
-                    let baseHandleSize = CGSize(width: 20, height: 6)
-                    let isHorizontal = (edgeIndex % 2 == 0)
-
-                    let coreHandleShapeView = AnyView(
-                        shape
-                            .fill(Color.orange.opacity(0.7))
-                            .frame(width: baseHandleSize.width, height: baseHandleSize.height)
-                            .contentShape(shape)
-                    )
-                    
-                    let positionedHandleContent = PositionedHandle(
-                        baseHandleView: coreHandleShapeView,
-                        rotation: .degrees(isHorizontal ? 0 : 90),
-                        onHoverAction: { isHovered in
-                            print("Edge \(edgeIndex) hover: \(isHovered). Calling onHoverCallback.")
-                            if isHovered {
-                                self.onHoverCallback(edgeIndex)
-                                print(">>> EdgeHandles: Called onHoverCallback with \(edgeIndex)")
-                            } else {
-                                // Callback should be intelligent enough to handle unhovering the correct index
-                                // or CroppingView needs to manage this.
-                                // For now, sending nil implies this edge is no longer hovered.
-                                // If another edge is simultaneously hovered, CroppingView needs to resolve.
-                                // A safer approach might be if onHoverCallback only sends the index when hovered,
-                                // and CroppingView clears if the onHover on the entire ZStack indicates no hover.
-                                // Let's stick to the simple model: if this edge unhovers, it reports nil for itself.
-                                self.onHoverCallback(nil) // Or, only call if it *was* the hovered one.
-                                                          // The parent (CroppingView) will receive multiple nils if multiple unhover.
-                                                          // A robust system needs one source of truth.
-                                                          // For this attempt, let's make it simple:
-                                print(">>> EdgeHandles: Called onHoverCallback with nil (was \(edgeIndex))")
-                            }
-                        },
-                        onDragAction: { value in
-                            let newPositionInCropSpace = value.location
-                            let clampedPosition = clampPointToImageFrame(newPositionInCropSpace)
-                            updateCorners(for: edgeIndex, to: clampedPosition)
-                        },
-                        parentCoordinateSpaceName: self.parentCoordinateSpaceName
-                    )
-                    
-                    let offsetX = midPoint.x - (geometrySize.width / 2)
-                    let offsetY = midPoint.y - (geometrySize.height / 2)
-                    
-                    positionedHandleContent
-                        .offset(x: offsetX, y: offsetY)
-                        .task(id: "\(edgeIndex)-\(midPoint.x)-\(midPoint.y)-\(geometrySize.width)-\(geometrySize.height)-\(offsetX)-\(offsetY)") {
-                            if edgeIndex == 0 {
-                                // Keeping the debug print for now
-                                print("Edge 0 (debug via .task): MidPoint=(\(midPoint.x), \(midPoint.y)), geometrySize=(\(geometrySize.width), \(geometrySize.height)), CalculatedOffset=(\(offsetX), \(offsetY))")
-                            }
+                let coreHandleShapeView = AnyView(
+                    shape
+                        .fill(Color.orange.opacity(0.7))
+                        .frame(width: baseHandleSize.width, height: baseHandleSize.height)
+                        .contentShape(shape)
+                )
+                
+                let positionedHandleContent = PositionedHandle(
+                    baseHandleView: coreHandleShapeView,
+                    rotation: .degrees(isHorizontal ? 0 : 90),
+                    onHoverAction: { isHovered in
+                        if isHovered {
+                            self.onHoverCallback(edgeIndex)
+                        } else {
+                            // Callback should be intelligent enough to handle unhovering the correct index
+                            // or CroppingView needs to manage this.
+                            // For now, sending nil implies this edge is no longer hovered.
+                            // If another edge is simultaneously hovered, CroppingView needs to resolve.
+                            // A safer approach might be if onHoverCallback only sends the index when hovered,
+                            // and CroppingView clears if the onHover on the entire ZStack indicates no hover.
+                            // Let's stick to the simple model: if this edge unhovers, it reports nil for itself.
+                            self.onHoverCallback(nil) // Or, only call if it *was* the hovered one.
+                            // The parent (CroppingView) will receive multiple nils if multiple unhover.
+                            // A robust system needs one source of truth.
+                            // For this attempt, let's make it simple:
                         }
-                } else {
-                    EmptyView()
-                }
+                    },
+                    onDragAction: { value in
+                        let newPositionInCropSpace = value.location
+                        let clampedPosition = clampPointToImageFrame(newPositionInCropSpace)
+                        updateCorners(for: edgeIndex, to: clampedPosition)
+                    },
+                    parentCoordinateSpaceName: self.parentCoordinateSpaceName
+                )
+                
+                let offsetX = midPoint.x - (geometrySize.width / 2)
+                let offsetY = midPoint.y - (geometrySize.height / 2)
+                
+                positionedHandleContent
+                    .offset(x: offsetX, y: offsetY)
             } else {
                 EmptyView()
             }
@@ -118,12 +108,8 @@ struct EdgeHandles: View {
     
     var body: some View {
         ZStack {
-            if cornerPoints.count == 4 {
-                ForEach(0..<4) { index in
-                    edgeHandleView(edgeIndex: index)
-                }
-            } else {
-                EmptyView()
+            ForEach(0..<4) { index in
+                edgeHandleView(edgeIndex: index)
             }
         }
         .frame(width: geometrySize.width, height: geometrySize.height)

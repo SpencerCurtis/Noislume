@@ -35,7 +35,7 @@ struct CornerHandles: View {
                     Circle()
                         .fill(Color.blue.opacity(0.7)) 
                         .frame(width: 12, height: 12)
-                        .contentShape(Circle())
+                        .contentShape(Circle().scale(2))
                         .onHover { isHovered in
                             print("Corner \(index) hover: \(isHovered). Calling onHoverCallback.")
                             if isHovered {

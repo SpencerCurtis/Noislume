@@ -1,0 +1,4 @@
+project: Noislume.xcodeproj
+retain_assign_only_properties: true
+schemes:
+- Noislume

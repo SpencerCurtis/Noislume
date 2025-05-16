@@ -69,17 +69,6 @@ final class KeyboardShortcutManager: ObservableObject {
         AppSettings.shared.updateShortcut(forAction: actionId, shortcut: recordedShortcutData)
         // The sink on AppSettings.shared.$shortcuts will automatically call loadShortcutsFromAppSettings()
     }
-    
-    func resetToDefault(_ shortcut: KeyboardShortcut) {
-        let actionId = shortcut.appSettingsActionId
-        AppSettings.shared.resetShortcut(forAction: actionId)
-        // The sink on AppSettings.shared.$shortcuts will automatically call loadShortcutsFromAppSettings()
-    }
-    
-    func resetAllToDefaults() {
-        AppSettings.shared.resetAllShortcuts()
-        // The sink on AppSettings.shared.$shortcuts will automatically call loadShortcutsFromAppSettings()
-    }
 }
 
 // Definition of KeyboardShortcutDefinition is assumed to be in this file or globally available.

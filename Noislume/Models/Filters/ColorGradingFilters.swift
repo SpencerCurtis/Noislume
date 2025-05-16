@@ -1,33 +1,10 @@
 import CoreImage
 
-struct TemperatureTintFilter: ImageFilter {
-    let category: FilterCategory = .colorGrading
-    
-    func apply(to image: CIImage, with adjustments: ImageAdjustments) -> CIImage {
-        let filter = CIFilter.temperatureAndTint()
-        filter.inputImage = image
-        filter.neutral = CIVector(x: CGFloat(adjustments.temperature), y: CGFloat(adjustments.tint))
-        filter.targetNeutral = CIVector(x: 6500, y: 0)
-        return filter.outputImage ?? image
-    }
-}
-
-struct VibranceFilter: ImageFilter {
-    let category: FilterCategory = .colorGrading
-    
-    func apply(to image: CIImage, with adjustments: ImageAdjustments) -> CIImage {
-        let filter = CIFilter.vibrance()
-        filter.inputImage = image
-        filter.amount = adjustments.vibrance
-        return filter.outputImage ?? image
-    }
-}
-
 struct BlackAndWhiteFilter: ImageFilter {
     let category: FilterCategory = .colorGrading
     
     func apply(to image: CIImage, with adjustments: ImageAdjustments) -> CIImage {
-        guard adjustments.isBlackAndWhite else { return image }
+         guard adjustments.isBlackAndWhite else { return image }
         
         let r = CGFloat(adjustments.bwRedContribution)
         let g = CGFloat(adjustments.bwGreenContribution)

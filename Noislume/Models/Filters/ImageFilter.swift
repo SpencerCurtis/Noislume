@@ -7,6 +7,7 @@ protocol ImageFilter {
 }
 
 enum FilterCategory {
+    case filmBase
     case inversion
     case toneAndContrast
     case colorGrading

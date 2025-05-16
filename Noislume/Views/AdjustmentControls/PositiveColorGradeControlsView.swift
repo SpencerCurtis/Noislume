@@ -9,6 +9,24 @@ struct PositiveColorGradeControlsView: View {
                 .font(.headline)
                 .padding(.bottom, 2)
 
+            // White Balance Picker Button
+            HStack {
+                Button(action: {
+                    viewModel.toggleWhiteBalanceSampling()
+                }) {
+                    Label(viewModel.isSamplingWhiteBalance ? "Cancel" : "Pick White Balance", systemImage: "eyedropper")
+                }
+                .help(viewModel.isSamplingWhiteBalance ? "Cancel white balance sampling" : "Click to sample a neutral color from the image for white balance")
+                Spacer() // Push button to the left if desired
+            }
+            .padding(.bottom, 5)
+            
+            if viewModel.isSamplingWhiteBalance {
+                Text("Click on a neutral (white or gray) area in the image.")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+            }
+
             // Positive Temperature Slider
             HStack {
                 Text("Temperature (+)")
@@ -80,6 +98,14 @@ struct PositiveColorGradeControlsView: View {
                     .textFieldStyle(RoundedBorderTextFieldStyle())
                     .frame(width: 60)
             }
+            
+            // Add DisclosureGroup for Polynomial Controls
+            DisclosureGroup("Polynomial Curve Coefficients (Advanced)") {
+                PolynomialControlsView(viewModel: viewModel)
+                    .padding(.top, 5) // Add some spacing above the polynomial controls
+            }
+            .padding(.top, 10) // Add some spacing above the disclosure group
+
         }
         .padding(.vertical)
     }

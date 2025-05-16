@@ -56,7 +56,7 @@
 - **Architecture:** Model-View-ViewModel (MVVM) is strictly followed.
 - **Image Processing:** Core Image (utilizing system `CIRAWFilter` for RAW decoding and a custom filter chain).
 - **Concurrency:** Swift Concurrency (`async/await`, `actor` for `CoreImageProcessor`).
-- **Logging:** `os.log` with the subsystem "com.SpencerCurtis.Noislume".
+- **Logging:** use print statements.
 
 ## Directory Structure Highlights
 - `Noislume/Views/`: SwiftUI Views

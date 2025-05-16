@@ -9,6 +9,12 @@ struct ImageAdjustments: Codable {
     var gamma: Float = 1
     var highlights: Float = 0
     var shadows: Float = 0
+    var lights: Float = 0
+    var darks: Float = 0
+    var whites: Float = 1.0
+    var blacks: Float = 0
+    var labGlow: Float = 0
+    var labFade: Float = 0
     
     // Color
     var temperature: Float = 6500
@@ -20,25 +26,16 @@ struct ImageAdjustments: Codable {
     var isBlackAndWhite: Bool = false
     var sepiaIntensity: Float = 0
     
-    // Positive Color Grading (New)
+    // Positive Color Grading
     var positiveTemperature: Float = 6500
     var positiveTint: Float = 0
     var positiveVibrance: Float = 0
     var positiveSaturation: Float = 1
     
-    // B&W Mixer Controls (New)
+    // B&W Mixer Controls
     var bwRedContribution: Float = 0.299
     var bwGreenContribution: Float = 0.587
     var bwBlueContribution: Float = 0.114
-    
-    // Film Base Sampling (New)
-    var filmBaseSamplePointX: CGFloat?
-    var filmBaseSamplePointY: CGFloat?
-    
-    var sampledFilmBaseColorR: CGFloat?
-    var sampledFilmBaseColorG: CGFloat?
-    var sampledFilmBaseColorB: CGFloat?
-    var sampledFilmBaseColorA: CGFloat?
     
     // Sharpening & Noise
     var sharpness: Float = 0
@@ -53,27 +50,6 @@ struct ImageAdjustments: Codable {
     var rotation: Float = 0
     var scale: Float = 1
     
-    // Advanced Color
-    private var whitePointRed: CGFloat = 1.0
-    private var whitePointGreen: CGFloat = 1.0
-    private var whitePointBlue: CGFloat = 1.0
-    private var whitePointAlpha: CGFloat = 1.0
-    
-    var whitePoint: CIColor? {
-        get {
-            return CIColor(red: whitePointRed,
-                           green: whitePointGreen,
-                           blue: whitePointBlue,
-                           alpha: whitePointAlpha)
-        }
-        set {
-            whitePointRed = newValue?.red ?? 1.0
-            whitePointGreen = newValue?.green ?? 1.0
-            whitePointBlue = newValue?.blue ?? 1.0
-            whitePointAlpha = newValue?.alpha ?? 1.0
-        }
-    }
-    
     var lutData: Data?
     var lutDimension: Int = 64
     var redPolynomial: [CGFloat] = [0, 1, 0, 0]
@@ -84,36 +60,21 @@ struct ImageAdjustments: Codable {
     var unsharpMaskRadius: Float = 2.5
     var unsharpMaskIntensity: Float = 0.5
     
-    // Computed property for filmBaseSamplePoint
-    var filmBaseSamplePoint: CGPoint? {
-        get {
-            if let x = filmBaseSamplePointX, let y = filmBaseSamplePointY {
-                return CGPoint(x: x, y: y)
-            }
-            return nil
-        }
-        set {
-            filmBaseSamplePointX = newValue?.x
-            filmBaseSamplePointY = newValue?.y
-        }
-    }
-
-    // Computed property for sampledFilmBaseColor
-    var sampledFilmBaseColor: CIColor? {
-        get {
-            if let r = sampledFilmBaseColorR, let g = sampledFilmBaseColorG, let b = sampledFilmBaseColorB, let a = sampledFilmBaseColorA {
-                return CIColor(red: r, green: g, blue: b, alpha: a)
-            }
-            return nil
-        }
-        set {
-            sampledFilmBaseColorR = newValue?.red
-            sampledFilmBaseColorG = newValue?.green
-            sampledFilmBaseColorB = newValue?.blue
-            sampledFilmBaseColorA = newValue?.alpha
-        }
-    }
+    // Polynomial Coefficients for PositiveColorGradeFilter (transient)
+    var polyRedLinear: Float = 1.15
+    var polyRedQuadratic: Float = -0.05
+    var polyGreenLinear: Float = 0.95
+    var polyGreenQuadratic: Float = 0.0
+    var polyBlueLinear: Float = 0.85
+    var polyBlueQuadratic: Float = 0.05
     
+    // White Balance Correction (transient)
+    var whiteBalanceSampledColor: CIColor? // Not Codable for now
+    
+    // MARK: - Film Base Sampling
+    var filmBaseSamplePoint: CGPoint?       // User-tapped point
+    var filmBaseSamplePointColor: CIColor?  // Sampled color for neutralization
+
     struct PerspectiveCorrection: Codable {
         var points: [CGPoint]
         var originalImageSize: CGSize
@@ -123,145 +84,50 @@ struct ImageAdjustments: Codable {
             self.originalImageSize = imageSize
         }
     }
-    
     var perspectiveCorrection: PerspectiveCorrection?
-    
-    init(exposure: Float = -0.2,      // Slightly darker
-         contrast: Float = 1.2,       // More contrast
-         brightness: Float = -0.1,     // Slightly darker
-         gamma: Float = 1.1,          // Slightly more gamma
-         highlights: Float = -0.1,     // Reduce highlights
-         shadows: Float = 0.1,         // Lift shadows slightly
-         temperature: Float = 6500,
-         tint: Float = 0,
-         vibrance: Float = 0.1,       // Slight vibrance boost
-         saturation: Float = 1.1,     // Slight saturation boost
-         isBlackAndWhite: Bool = false,
-         sepiaIntensity: Float = 0,
-         positiveTemperature: Float = 6500,
-         positiveTint: Float = 0,
-         positiveVibrance: Float = 0,
-         positiveSaturation: Float = 1,
-         bwRedContribution: Float = 0.299,
-         bwGreenContribution: Float = 0.587,
-         bwBlueContribution: Float = 0.114,
-         // Film Base Sampling
-         filmBaseSamplePointX: CGFloat? = nil,
-         filmBaseSamplePointY: CGFloat? = nil,
-         sampledFilmBaseColorR: CGFloat? = nil,
-         sampledFilmBaseColorG: CGFloat? = nil,
-         sampledFilmBaseColorB: CGFloat? = nil,
-         sampledFilmBaseColorA: CGFloat? = nil,
-         sharpness: Float = 0,
-         luminanceNoise: Float = 0,
-         noiseReduction: Float = 0,
-         straightenAngle: Float = 0,
-         vignetteIntensity: Float = 0,
-         vignetteRadius: Float = 1,
-         cropRect: CGRect? = nil,
-         rotation: Float = 0,
-         scale: Float = 1,
-         whitePointRed: CGFloat = 1.0,
-         whitePointGreen: CGFloat = 1.0,
-         whitePointBlue: CGFloat = 1.0,
-         whitePointAlpha: CGFloat = 1.0,
-         lutData: Data? = nil,
-         lutDimension: Int = 64,
-         redPolynomial: [CGFloat] = [0, 1, 0, 0],
-         greenPolynomial: [CGFloat] = [0, 1, 0, 0],
-         bluePolynomial: [CGFloat] = [0, 1, 0, 0],
-         unsharpMaskRadius: Float = 2.5,
-         unsharpMaskIntensity: Float = 0.5,
-         perspectiveCorrection: PerspectiveCorrection? = nil) {
-        self.exposure = exposure
-        self.contrast = contrast
-        self.brightness = brightness
-        self.gamma = gamma
-        self.highlights = highlights
-        self.shadows = shadows
-        self.temperature = temperature
-        self.tint = tint
-        self.vibrance = vibrance
-        self.saturation = saturation
-        self.isBlackAndWhite = isBlackAndWhite
-        self.sepiaIntensity = sepiaIntensity
-        self.positiveTemperature = positiveTemperature
-        self.positiveTint = positiveTint
-        self.positiveVibrance = positiveVibrance
-        self.positiveSaturation = positiveSaturation
-        self.bwRedContribution = bwRedContribution
-        self.bwGreenContribution = bwGreenContribution
-        self.bwBlueContribution = bwBlueContribution
-        // Film Base Sampling
-        self.filmBaseSamplePointX = filmBaseSamplePointX
-        self.filmBaseSamplePointY = filmBaseSamplePointY
-        self.sampledFilmBaseColorR = sampledFilmBaseColorR
-        self.sampledFilmBaseColorG = sampledFilmBaseColorG
-        self.sampledFilmBaseColorB = sampledFilmBaseColorB
-        self.sampledFilmBaseColorA = sampledFilmBaseColorA
-        self.sharpness = sharpness
-        self.luminanceNoise = luminanceNoise
-        self.noiseReduction = noiseReduction
-        self.straightenAngle = straightenAngle
-        self.vignetteIntensity = vignetteIntensity
-        self.vignetteRadius = vignetteRadius
-        self.cropRect = cropRect
-        self.rotation = rotation
-        self.scale = scale
-        self.whitePointRed = whitePointRed
-        self.whitePointGreen = whitePointGreen
-        self.whitePointBlue = whitePointBlue
-        self.whitePointAlpha = whitePointAlpha
-        self.lutData = lutData
-        self.lutDimension = lutDimension
-        self.redPolynomial = redPolynomial
-        self.greenPolynomial = greenPolynomial
-        self.bluePolynomial = bluePolynomial
-        self.unsharpMaskRadius = unsharpMaskRadius
-        self.unsharpMaskIntensity = unsharpMaskIntensity
-        self.perspectiveCorrection = perspectiveCorrection
+
+    // Default initializer
+    init() {
+        // Uses default values specified in property declarations or memberwise init defaults
     }
-    
+
     mutating func resetAll() {
-        exposure = -0.2
-        contrast = 1.2
-        brightness = -0.1
-        gamma = 1.1
-        highlights = -0.1
-        shadows = 0.1
+        exposure = 0.0
+        contrast = 1.0
+        brightness = 0.0
+        gamma = 1.0
+        highlights = 0.0
+        shadows = 0.0
+        lights = 0.0
+        darks = 0.0
+        whites = 1.0
+        blacks = 0.0
+        labGlow = 0.0
+        labFade = 0.0
         temperature = 6500
-        tint = 0
-        vibrance = 0.1
-        saturation = 1.1
+        tint = 0.0
+        vibrance = 0.0
+        saturation = 1.0
         isBlackAndWhite = false
-        sepiaIntensity = 0
+        sepiaIntensity = 0.0
         positiveTemperature = 6500
-        positiveTint = 0
-        positiveVibrance = 0
-        positiveSaturation = 1
+        positiveTint = 0.0
+        positiveVibrance = 0.0
+        positiveSaturation = 1.0
         bwRedContribution = 0.299
         bwGreenContribution = 0.587
         bwBlueContribution = 0.114
-        // Film Base Sampling
-        filmBaseSamplePointX = nil
-        filmBaseSamplePointY = nil
-        sampledFilmBaseColorR = nil
-        sampledFilmBaseColorG = nil
-        sampledFilmBaseColorB = nil
-        sampledFilmBaseColorA = nil
-        sharpness = 0
-        luminanceNoise = 0
-        noiseReduction = 0
-        straightenAngle = 0
-        vignetteIntensity = 0
-        vignetteRadius = 1
+        filmBaseSamplePoint = nil
+        filmBaseSamplePointColor = nil
+        sharpness = 0.0
+        luminanceNoise = 0.0
+        noiseReduction = 0.0
+        straightenAngle = 0.0
+        vignetteIntensity = 0.0
+        vignetteRadius = 1.0
         cropRect = nil
-        rotation = 0
-        scale = 1
-        whitePointRed = 1.0
-        whitePointGreen = 1.0
-        whitePointBlue = 1.0
-        whitePointAlpha = 1.0
+        rotation = 0.0
+        scale = 1.0
         lutData = nil
         lutDimension = 64
         redPolynomial = [0, 1, 0, 0]
@@ -270,12 +136,19 @@ struct ImageAdjustments: Codable {
         unsharpMaskRadius = 2.5
         unsharpMaskIntensity = 0.5
         perspectiveCorrection = nil
+        // Transient
+        polyRedLinear = 1.15
+        polyRedQuadratic = -0.05
+        polyGreenLinear = 0.95
+        polyGreenQuadratic = 0.0
+        polyBlueLinear = 0.85
+        polyBlueQuadratic = 0.05
+        whiteBalanceSampledColor = nil
     }
     
     // MARK: - Codable
-    
     enum CodingKeys: String, CodingKey {
-        case exposure, contrast, brightness, gamma, highlights, shadows
+        case exposure, contrast, brightness, gamma, highlights, shadows, lights, darks, whites, blacks, labGlow, labFade
         case temperature, tint, vibrance, saturation
         case isBlackAndWhite, sepiaIntensity
         case positiveTemperature, positiveTint, positiveVibrance, positiveSaturation
@@ -283,184 +156,140 @@ struct ImageAdjustments: Codable {
         case sharpness, luminanceNoise, noiseReduction
         case straightenAngle, vignetteIntensity, vignetteRadius
         case cropRect, rotation, scale
-        case whitePointRed, whitePointGreen, whitePointBlue, whitePointAlpha
         case lutData, lutDimension
         case redPolynomial, greenPolynomial, bluePolynomial
         case unsharpMaskRadius, unsharpMaskIntensity
         case perspectiveCorrection
-        case filmBaseSamplePointX, filmBaseSamplePointY
-        case sampledFilmBaseColorR, sampledFilmBaseColorG, sampledFilmBaseColorB, sampledFilmBaseColorA
+        case filmBaseSamplePoint           // New
+        case filmBaseSamplePointColor      // New
+        // Transient properties like whiteBalanceSampledColor, poly... are not included
     }
     
-    // CGRect isn't Codable by default, so we need to handle it
+    // Helper for CGRect Codable conformance
     struct CodingRectangle: Codable {
-        let x: CGFloat
-        let y: CGFloat
-        let width: CGFloat
-        let height: CGFloat
-        
-        var rect: CGRect {
-            return CGRect(x: x, y: y, width: width, height: height)
-        }
-        
+        let x: CGFloat, y: CGFloat, width: CGFloat, height: CGFloat
+        var rect: CGRect { CGRect(x: x, y: y, width: width, height: height) }
         init(rect: CGRect) {
-            x = rect.origin.x
-            y = rect.origin.y
-            width = rect.width
-            height = rect.height
+            self.x = rect.origin.x; self.y = rect.origin.y
+            self.width = rect.width; self.height = rect.height
         }
     }
-    
-    // CGPoint isn't Codable by default, so we need to handle it
-    struct CodingPoint: Codable {
-        let x: CGFloat
-        let y: CGFloat
-        
-        var point: CGPoint {
-            return CGPoint(x: x, y: y)
-        }
-        
-        init(point: CGPoint) {
-            x = point.x
-            y = point.y
-        }
-    }
-    
+
+    // CGPoint is assumed to be Codable project-wide or via an extension.
+    // If not, a CodingPoint struct similar to CodingRectangle would be needed here.
+
     public func encode(to encoder: Encoder) throws {
         var container = encoder.container(keyedBy: CodingKeys.self)
-        
         try container.encode(exposure, forKey: .exposure)
         try container.encode(contrast, forKey: .contrast)
         try container.encode(brightness, forKey: .brightness)
         try container.encode(gamma, forKey: .gamma)
         try container.encode(highlights, forKey: .highlights)
         try container.encode(shadows, forKey: .shadows)
-        
+        try container.encode(lights, forKey: .lights)
+        try container.encode(darks, forKey: .darks)
+        try container.encode(whites, forKey: .whites)
+        try container.encode(blacks, forKey: .blacks)
+        try container.encode(labGlow, forKey: .labGlow)
+        try container.encode(labFade, forKey: .labFade)
         try container.encode(temperature, forKey: .temperature)
         try container.encode(tint, forKey: .tint)
         try container.encode(vibrance, forKey: .vibrance)
         try container.encode(saturation, forKey: .saturation)
-        
         try container.encode(isBlackAndWhite, forKey: .isBlackAndWhite)
         try container.encode(sepiaIntensity, forKey: .sepiaIntensity)
-        
         try container.encode(positiveTemperature, forKey: .positiveTemperature)
         try container.encode(positiveTint, forKey: .positiveTint)
         try container.encode(positiveVibrance, forKey: .positiveVibrance)
         try container.encode(positiveSaturation, forKey: .positiveSaturation)
-        
         try container.encode(bwRedContribution, forKey: .bwRedContribution)
         try container.encode(bwGreenContribution, forKey: .bwGreenContribution)
         try container.encode(bwBlueContribution, forKey: .bwBlueContribution)
-        
-        // Encode Film Base Sampling
-        try container.encodeIfPresent(filmBaseSamplePointX, forKey: .filmBaseSamplePointX)
-        try container.encodeIfPresent(filmBaseSamplePointY, forKey: .filmBaseSamplePointY)
-        try container.encodeIfPresent(sampledFilmBaseColorR, forKey: .sampledFilmBaseColorR)
-        try container.encodeIfPresent(sampledFilmBaseColorG, forKey: .sampledFilmBaseColorG)
-        try container.encodeIfPresent(sampledFilmBaseColorB, forKey: .sampledFilmBaseColorB)
-        try container.encodeIfPresent(sampledFilmBaseColorA, forKey: .sampledFilmBaseColorA)
-        
         try container.encode(sharpness, forKey: .sharpness)
         try container.encode(luminanceNoise, forKey: .luminanceNoise)
         try container.encode(noiseReduction, forKey: .noiseReduction)
-        
         try container.encode(straightenAngle, forKey: .straightenAngle)
         try container.encode(vignetteIntensity, forKey: .vignetteIntensity)
         try container.encode(vignetteRadius, forKey: .vignetteRadius)
-        
-        if let cropRect = cropRect {
-            try container.encode(CodingRectangle(rect: cropRect), forKey: .cropRect)
-        }
-        
+        try container.encodeIfPresent(cropRect.map(CodingRectangle.init), forKey: .cropRect)
         try container.encode(rotation, forKey: .rotation)
         try container.encode(scale, forKey: .scale)
-        
-        try container.encode(whitePointRed, forKey: .whitePointRed)
-        try container.encode(whitePointGreen, forKey: .whitePointGreen)
-        try container.encode(whitePointBlue, forKey: .whitePointBlue)
-        try container.encode(whitePointAlpha, forKey: .whitePointAlpha)
-        
-        try container.encode(lutData, forKey: .lutData)
+        try container.encodeIfPresent(lutData, forKey: .lutData)
         try container.encode(lutDimension, forKey: .lutDimension)
-        
         try container.encode(redPolynomial, forKey: .redPolynomial)
         try container.encode(greenPolynomial, forKey: .greenPolynomial)
         try container.encode(bluePolynomial, forKey: .bluePolynomial)
-        
         try container.encode(unsharpMaskRadius, forKey: .unsharpMaskRadius)
         try container.encode(unsharpMaskIntensity, forKey: .unsharpMaskIntensity)
+        try container.encodeIfPresent(perspectiveCorrection, forKey: .perspectiveCorrection)
         
-        if let perspectiveCorrection = perspectiveCorrection {
-            try container.encode(perspectiveCorrection, forKey: .perspectiveCorrection)
+        try container.encodeIfPresent(filmBaseSamplePoint, forKey: .filmBaseSamplePoint)
+        if let color = filmBaseSamplePointColor {
+            let colorData = try NSKeyedArchiver.archivedData(withRootObject: color, requiringSecureCoding: false)
+            try container.encode(colorData, forKey: .filmBaseSamplePointColor)
         }
     }
     
     public init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
-        
         exposure = try container.decodeIfPresent(Float.self, forKey: .exposure) ?? 0
         contrast = try container.decodeIfPresent(Float.self, forKey: .contrast) ?? 1
         brightness = try container.decodeIfPresent(Float.self, forKey: .brightness) ?? 0
         gamma = try container.decodeIfPresent(Float.self, forKey: .gamma) ?? 1
         highlights = try container.decodeIfPresent(Float.self, forKey: .highlights) ?? 0
         shadows = try container.decodeIfPresent(Float.self, forKey: .shadows) ?? 0
-        
+        lights = try container.decodeIfPresent(Float.self, forKey: .lights) ?? 0
+        darks = try container.decodeIfPresent(Float.self, forKey: .darks) ?? 0
+        whites = try container.decodeIfPresent(Float.self, forKey: .whites) ?? 1.0
+        blacks = try container.decodeIfPresent(Float.self, forKey: .blacks) ?? 0
+        labGlow = try container.decodeIfPresent(Float.self, forKey: .labGlow) ?? 0
+        labFade = try container.decodeIfPresent(Float.self, forKey: .labFade) ?? 0
         temperature = try container.decodeIfPresent(Float.self, forKey: .temperature) ?? 6500
         tint = try container.decodeIfPresent(Float.self, forKey: .tint) ?? 0
         vibrance = try container.decodeIfPresent(Float.self, forKey: .vibrance) ?? 0
         saturation = try container.decodeIfPresent(Float.self, forKey: .saturation) ?? 1
-        
         isBlackAndWhite = try container.decodeIfPresent(Bool.self, forKey: .isBlackAndWhite) ?? false
         sepiaIntensity = try container.decodeIfPresent(Float.self, forKey: .sepiaIntensity) ?? 0
-        
         positiveTemperature = try container.decodeIfPresent(Float.self, forKey: .positiveTemperature) ?? 6500
         positiveTint = try container.decodeIfPresent(Float.self, forKey: .positiveTint) ?? 0
         positiveVibrance = try container.decodeIfPresent(Float.self, forKey: .positiveVibrance) ?? 0
         positiveSaturation = try container.decodeIfPresent(Float.self, forKey: .positiveSaturation) ?? 1
-        
         bwRedContribution = try container.decodeIfPresent(Float.self, forKey: .bwRedContribution) ?? 0.299
         bwGreenContribution = try container.decodeIfPresent(Float.self, forKey: .bwGreenContribution) ?? 0.587
         bwBlueContribution = try container.decodeIfPresent(Float.self, forKey: .bwBlueContribution) ?? 0.114
-        
-        // Decode Film Base Sampling
-        filmBaseSamplePointX = try container.decodeIfPresent(CGFloat.self, forKey: .filmBaseSamplePointX)
-        filmBaseSamplePointY = try container.decodeIfPresent(CGFloat.self, forKey: .filmBaseSamplePointY)
-        sampledFilmBaseColorR = try container.decodeIfPresent(CGFloat.self, forKey: .sampledFilmBaseColorR)
-        sampledFilmBaseColorG = try container.decodeIfPresent(CGFloat.self, forKey: .sampledFilmBaseColorG)
-        sampledFilmBaseColorB = try container.decodeIfPresent(CGFloat.self, forKey: .sampledFilmBaseColorB)
-        sampledFilmBaseColorA = try container.decodeIfPresent(CGFloat.self, forKey: .sampledFilmBaseColorA)
-        
         sharpness = try container.decodeIfPresent(Float.self, forKey: .sharpness) ?? 0
         luminanceNoise = try container.decodeIfPresent(Float.self, forKey: .luminanceNoise) ?? 0
         noiseReduction = try container.decodeIfPresent(Float.self, forKey: .noiseReduction) ?? 0
-        
         straightenAngle = try container.decodeIfPresent(Float.self, forKey: .straightenAngle) ?? 0
         vignetteIntensity = try container.decodeIfPresent(Float.self, forKey: .vignetteIntensity) ?? 0
         vignetteRadius = try container.decodeIfPresent(Float.self, forKey: .vignetteRadius) ?? 1
-        
-        if let codingRect = try container.decodeIfPresent(CodingRectangle.self, forKey: .cropRect) {
-            cropRect = codingRect.rect
-        }
-        
+        cropRect = try container.decodeIfPresent(CodingRectangle.self, forKey: .cropRect)?.rect
         rotation = try container.decodeIfPresent(Float.self, forKey: .rotation) ?? 0
         scale = try container.decodeIfPresent(Float.self, forKey: .scale) ?? 1
-        
-        whitePointRed = try container.decodeIfPresent(CGFloat.self, forKey: .whitePointRed) ?? 1.0
-        whitePointGreen = try container.decodeIfPresent(CGFloat.self, forKey: .whitePointGreen) ?? 1.0
-        whitePointBlue = try container.decodeIfPresent(CGFloat.self, forKey: .whitePointBlue) ?? 1.0
-        whitePointAlpha = try container.decodeIfPresent(CGFloat.self, forKey: .whitePointAlpha) ?? 1.0
-        
         lutData = try container.decodeIfPresent(Data.self, forKey: .lutData)
         lutDimension = try container.decodeIfPresent(Int.self, forKey: .lutDimension) ?? 64
-        
         redPolynomial = try container.decodeIfPresent([CGFloat].self, forKey: .redPolynomial) ?? [0, 1, 0, 0]
         greenPolynomial = try container.decodeIfPresent([CGFloat].self, forKey: .greenPolynomial) ?? [0, 1, 0, 0]
         bluePolynomial = try container.decodeIfPresent([CGFloat].self, forKey: .bluePolynomial) ?? [0, 1, 0, 0]
-        
         unsharpMaskRadius = try container.decodeIfPresent(Float.self, forKey: .unsharpMaskRadius) ?? 2.5
         unsharpMaskIntensity = try container.decodeIfPresent(Float.self, forKey: .unsharpMaskIntensity) ?? 0.5
-        
         perspectiveCorrection = try container.decodeIfPresent(PerspectiveCorrection.self, forKey: .perspectiveCorrection)
+        
+        filmBaseSamplePoint = try container.decodeIfPresent(CGPoint.self, forKey: .filmBaseSamplePoint)
+        if let colorData = try container.decodeIfPresent(Data.self, forKey: .filmBaseSamplePointColor) {
+            filmBaseSamplePointColor = try? NSKeyedUnarchiver.unarchivedObject(ofClass: CIColor.self, from: colorData)
+        } else {
+            filmBaseSamplePointColor = nil
+        }
+        
+        // Initialize transient properties not part of Codable
+        polyRedLinear = 1.15
+        polyRedQuadratic = -0.05
+        polyGreenLinear = 0.95
+        polyGreenQuadratic = 0.0
+        polyBlueLinear = 0.85
+        polyBlueQuadratic = 0.05
+        whiteBalanceSampledColor = nil
     }
 }
+

@@ -141,24 +141,6 @@ class ThumbnailCacheManager {
         }
     }
 
-    /// Removes all files from the thumbnail cache directory.
-    func clearCache() {
-        guard let dirURL = cacheDirectory else {
-            logger.error("Cannot clear thumbnail cache: directory URL is invalid.")
-            return
-        }
-        
-        do {
-            let contents = try fileManager.contentsOfDirectory(at: dirURL, includingPropertiesForKeys: nil, options: [])
-            for fileURL in contents {
-                try fileManager.removeItem(at: fileURL)
-            }
-            logger.info("Cleared all items from thumbnail file cache directory: \(dirURL.path)")
-        } catch {
-             logger.error("Failed to clear thumbnail file cache directory at \(dirURL.path): \(error.localizedDescription)")
-        }
-    }
-
     private func enforceSizeLimit() {
         guard appSettings.enableThumbnailFileCache, let dirURL = cacheDirectory else {
             // Cache is disabled or directory is unavailable

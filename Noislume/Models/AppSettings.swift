@@ -23,14 +23,19 @@ class AppSettings: ObservableObject {
 
     @Published var shortcuts: [String: ShortcutTypes.StoredShortcut] = [:] // action identifier to shortcut mapping
     
-    @Published var defaultCropInsetPercentage: Double = 10.0
     @AppStorage("showOriginalWhenCropping") var showOriginalWhenCropping: Bool = false
+    
+    // Add the missing maintainCropAspectRatio setting
+    @AppStorage("maintainCropAspectRatio") var maintainCropAspectRatio: Bool = true
     
     // Thumbnail File Cache Setting
     @AppStorage("enableThumbnailFileCache") var enableThumbnailFileCache: Bool = true
     @AppStorage("thumbnailCacheSizeLimitMB") var thumbnailCacheSizeLimitMB: Int = 500 // Default 500MB
     
     @AppStorage("independentCornerDragModifierRawValue") var independentCornerDragModifierRawValue: Int = Int(NSEvent.ModifierFlags.command.rawValue)
+
+    // MARK: - Processing Version
+    @AppStorage("selectedProcessingVersion") var selectedProcessingVersion: ProcessingVersion = .v2
 
     init() {
         // Default to 5% if no value is saved
@@ -84,31 +89,6 @@ class AppSettings: ObservableObject {
             key: stored.key,
             modifiers: NSEvent.ModifierFlags(rawValue: stored.modifierFlags)
         )
-    }
-    
-    // Optional: Add method to reset a shortcut to its default
-    func resetShortcut(forAction actionId: String) {
-        if let defaultShortcut = Self.defaultShortcuts[actionId] {
-            shortcuts[actionId] = ShortcutTypes.StoredShortcut(
-                key: defaultShortcut.key,
-                modifierFlags: defaultShortcut.modifiers.rawValue,
-                isGlobal: defaultShortcut.isGlobal
-            )
-            saveShortcuts()
-        }
-    }
-    
-    // Optional: Add method to reset all shortcuts to defaults
-    func resetAllShortcuts() {
-        shortcuts.removeAll()
-        for (actionId, defaultShortcut) in Self.defaultShortcuts {
-            shortcuts[actionId] = ShortcutTypes.StoredShortcut(
-                key: defaultShortcut.key,
-                modifierFlags: defaultShortcut.modifiers.rawValue,
-                isGlobal: defaultShortcut.isGlobal
-            )
-        }
-        saveShortcuts()
     }
     
     private func saveShortcuts() {

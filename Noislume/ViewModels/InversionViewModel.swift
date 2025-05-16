@@ -2,7 +2,6 @@ import Foundation
 import SwiftUI
 import CoreImage
 import UniformTypeIdentifiers
-import os.log
 import Combine
 
 @MainActor
@@ -58,6 +57,9 @@ class InversionViewModel: ObservableObject {
     
     @Published private(set) var currentImage: CIImage?
     
+    @Published private(set) var processedImage: NSImage?
+    @Published private(set) var originalImage: CIImage? // Store the original CIImage for reprocessing
+    
     init() {
         // Initialize ThumbnailCacheManager with AppSettings
         self.thumbnailFileCacheManager = ThumbnailCacheManager(appSettings: appSettings)
@@ -68,7 +70,7 @@ class InversionViewModel: ObservableObject {
             fileCacheManager: self.thumbnailFileCacheManager, // Pass the initialized manager
             appSettings: appSettings // Pass the same settings instance
         )
-        print("Initialized InversionViewModel with ThumbnailManager (including file cache support).")
+        // print("Initialized InversionViewModel with ThumbnailManager (including file cache support).") // Debug
         
         // Forward objectWillChange from thumbnailManager
         thumbnailManager.objectWillChange
@@ -104,13 +106,10 @@ class InversionViewModel: ObservableObject {
         // Sink for isSamplingFilmBaseColor to toggle cursor and set isSamplingFilmBase
         $isSamplingFilmBaseColor
             .dropFirst()
-            .sink { [weak self] موسمIsSamplingUIColorMode in // Renamed to avoid conflict
+            .sink { [weak self] isSamplingMode in // Renamed parameter
                 guard let self = self else { return }
-                // When entering/exiting UI color picking mode, update the processing flag.
-                // This ensures the image view shows the raw image during picking.
-                if self.isSamplingFilmBase != موسمIsSamplingUIColorMode { // Only update and reprocess if different
-                    self.isSamplingFilmBase = موسمIsSamplingUIColorMode
-                    // The change to isSamplingFilmBase will trigger its own sink for reprocessing.
+                if self.isSamplingFilmBase != isSamplingMode {
+                    self.isSamplingFilmBase = isSamplingMode
                 }
             }
             .store(in: &cancellables)
@@ -223,10 +222,21 @@ class InversionViewModel: ObservableObject {
             self.currentImageModel.rawImageURL = url // Update display model URL
             
             do {
+                let currentProcessingMode: ProcessingMode
+                if self.isCroppingPreviewActive {
+                    currentProcessingMode = .geometryOnly
+                } else if self.isSamplingFilmBase {
+                    currentProcessingMode = .rawOnly
+                } else {
+                    currentProcessingMode = .full
+                }
+                print("loadAndProcessImage: Using processing mode: \(currentProcessingMode)")
+
                 guard let processedImage = try await self.processor.processRAWImage(
                     fileURL: url,
-                    adjustments: adjustmentsForProcessing, // Use adjustments from ImageState
-                    applyFullFilterChain: !(self.isCroppingPreviewActive || self.isSamplingFilmBase)
+                    adjustments: adjustmentsForProcessing, 
+                    mode: currentProcessingMode, // Updated to use ProcessingMode
+                    processUntilFilterOfType: nil // Not stopping early for initial load
                 ) else {
                     print("Failed to process RAW image at URL: \(url.path)")
                     self.errorMessage = "Failed to load RAW image"
@@ -288,11 +298,22 @@ class InversionViewModel: ObservableObject {
             errorMessage = nil
             
             do {
+                let currentProcessingMode: ProcessingMode
+                if self.isCroppingPreviewActive {
+                    currentProcessingMode = .geometryOnly
+                } else if self.isSamplingFilmBase {
+                    currentProcessingMode = .rawOnly
+                } else {
+                    currentProcessingMode = .full
+                }
+                print("processImage (re-processing): Using processing mode: \(currentProcessingMode)")
+
                 // Use the existing shared processor instance
                 guard let processedImage = try await processor.processRAWImage(
                     fileURL: fileURL,
-                    adjustments: adjustments, // Pass the correct adjustments
-                    applyFullFilterChain: !(self.isCroppingPreviewActive || self.isSamplingFilmBase)
+                    adjustments: adjustments, 
+                    mode: currentProcessingMode, // Updated to use ProcessingMode
+                    processUntilFilterOfType: nil // Not stopping early for general re-process
                 ) else {
                     print("Failed to re-process RAW image at URL: \(fileURL.path)")
                     errorMessage = "Failed to re-process RAW image"
@@ -568,8 +589,8 @@ class InversionViewModel: ObservableObject {
             let imageForSampling = try await processor.processRAWImage(
                 fileURL: url,
                 adjustments: currentAdjustments, // Current adjustments up to this point
-                processUntilFilterOfType: PositiveColorGradeFilter.self, // Stop BEFORE this filter
-                applyFullFilterChain: true // Ensure rest of chain (like inversion) is applied
+                mode: .full, // Use .full mode to allow processUntilFilterOfType
+                processUntilFilterOfType: PositiveColorGradeFilter.self // Stop BEFORE this filter
             )
 
             if let imageToSampleFrom = imageForSampling {
@@ -690,6 +711,53 @@ class InversionViewModel: ObservableObject {
     }
 
     // MARK: - Cropping
+
+    // MARK: - V2 Filter Control Reset Methods
+
+    func resetExposureContrast() {
+        var newAdjustments = currentAdjustments
+        newAdjustments.exposure = 0.0
+        newAdjustments.contrast = 1.0
+        // newAdjustments.brightness = 0.0 // If brightness were part of this specific filter
+        newAdjustments.lights = 0.0      // Reset lights
+        newAdjustments.darks = 0.0       // Reset darks
+        newAdjustments.whites = 1.0      // Reset whites
+        newAdjustments.blacks = 0.0      // Reset blacks
+        currentAdjustments = newAdjustments
+        print("Reset Exposure & Contrast settings (including Lights, Darks, Whites, Blacks).")
+    }
+    
+    func resetPerceptualToneMapping() {
+        var newAdjustments = currentAdjustments
+        newAdjustments.sCurveShadowLift = 0.0
+        newAdjustments.sCurveHighlightPull = 0.0
+        newAdjustments.gamma = 1.0 // Reset gamma here
+        currentAdjustments = newAdjustments
+        print("Reset Perceptual Tone Mapping settings (S-Curve and Gamma).సెన్సార్")
+    }
+
+    func resetColorCastAndHueRefinements() {
+        currentAdjustments.applyMidtoneNeutralization = false
+        currentAdjustments.midtoneNeutralizationStrength = 1.0
+        currentAdjustments.shadowTintAngle = 0.0
+        currentAdjustments.shadowTintColor = CodableColor(color: .clear)
+        currentAdjustments.shadowTintStrength = 0.0
+        currentAdjustments.highlightTintAngle = 0.0
+        currentAdjustments.highlightTintColor = CodableColor(color: .clear)
+        currentAdjustments.highlightTintStrength = 0.0
+        currentAdjustments.targetCyanHueRangeCenter = 180.0
+        currentAdjustments.targetCyanHueRangeWidth = 30.0
+        currentAdjustments.targetCyanSaturationAdjustment = 0.0
+        currentAdjustments.targetCyanBrightnessAdjustment = 0.0
+        triggerImageProcessing()
+    }
+
+    func resetGeometry() {
+        currentAdjustments.resetGeometry()
+        triggerImageProcessing()
+    }
+
+    // MARK: - Image Loading and Processing
 }
 
 // ExportDocument struct and ExportError enum were moved to their own files.

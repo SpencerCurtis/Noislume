@@ -1,10 +1,12 @@
 
 import SwiftUI
 
-struct CollapsibleSection: View {
-    let title: String
+struct CollapsibleSection<Content: View>: View {
+    
     @Binding var isExpanded: Bool
-    let content: () -> any View
+    
+    let title: String
+    let content: () -> Content
     
     var body: some View {
         VStack(alignment: .leading) {
@@ -23,8 +25,9 @@ struct CollapsibleSection: View {
             .buttonStyle(.plain)
             
             if isExpanded {
-                AnyView(content())
+                content()
                     .transition(.opacity)
+                    .padding(.vertical)
             }
         }
     }

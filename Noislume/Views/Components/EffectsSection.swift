@@ -6,7 +6,7 @@ struct EffectsSection: View {
     var isDisabled: Bool
 
     var body: some View {
-        CollapsibleSection(title: "Effects", isExpanded: $isExpanded) {
+        CollapsibleSection(isExpanded: $isExpanded, title: "Effects") {
             Toggle("Black and White", isOn: $adjustments.isBlackAndWhite)
                 .disabled(isDisabled)
         }

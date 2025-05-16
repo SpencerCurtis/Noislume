@@ -1,5 +1,70 @@
 import Foundation
 import CoreImage
+import AppKit // Import AppKit for NSColor
+import SwiftUI // Moved import to top level
+
+// Define CodableColor
+struct CodableColor: Codable, Equatable {
+    var red: CGFloat
+    var green: CGFloat
+    var blue: CGFloat
+    var alpha: CGFloat
+
+    init(red: CGFloat, green: CGFloat, blue: CGFloat, alpha: CGFloat) {
+        self.red = red
+        self.green = green
+        self.blue = blue
+        self.alpha = alpha
+    }
+
+    init(color: NSColor) {
+        // Declare local CGFloat variables to receive the color components.
+        var r: CGFloat = 0.0
+        var g: CGFloat = 0.0
+        var b: CGFloat = 0.0
+        var a: CGFloat = 0.0
+        
+        // Attempt to convert to sRGB color space to get reliable components
+        if let srgbColor = color.usingColorSpace(.sRGB) {
+            srgbColor.getRed(&r, green: &g, blue: &b, alpha: &a)
+        } else {
+            // Fallback if conversion fails (should be rare for common colors)
+            color.getRed(&r, green: &g, blue: &b, alpha: &a)
+        }
+        
+        // Assign the retrieved values to the struct's properties.
+        self.red = r
+        self.green = g
+        self.blue = b
+        self.alpha = a
+    }
+
+    var nsColor: NSColor {
+        return NSColor(srgbRed: red, green: green, blue: blue, alpha: alpha)
+    }
+    
+    var ciColor: CIColor {
+        return CIColor(red: red, green: green, blue: blue, alpha: alpha)
+    }
+
+    // Convenience for SwiftUI Color
+    var swiftUIColor: Color {
+        return Color(nsColor)
+    }
+
+    // Common colors
+    static var clear: CodableColor {
+        return CodableColor(red: 0, green: 0, blue: 0, alpha: 0)
+    }
+    
+    // Equatable conformance
+    static func == (lhs: CodableColor, rhs: CodableColor) -> Bool {
+        return lhs.red == rhs.red &&
+               lhs.green == rhs.green &&
+               lhs.blue == rhs.blue &&
+               lhs.alpha == rhs.alpha
+    }
+}
 
 struct ImageAdjustments: Codable {
     // Tone & Contrast
@@ -47,7 +112,9 @@ struct ImageAdjustments: Codable {
     var vignetteIntensity: Float = 0
     var vignetteRadius: Float = 1
     var cropRect: CGRect?
-    var rotation: Float = 0
+    var rotationAngle: Int = 0 // In degrees, e.g., 0, 90, 180, 270
+    var isMirroredHorizontally: Bool = false
+    var isMirroredVertically: Bool = false
     var scale: Float = 1
     
     var lutData: Data?
@@ -85,6 +152,32 @@ struct ImageAdjustments: Codable {
         }
     }
     var perspectiveCorrection: PerspectiveCorrection?
+
+    var whiteBalanceTemperature: CGFloat = 6500
+    var whiteBalanceTint: CGFloat = 0
+
+    // MARK: - Perceptual Tone Mapping (S-Curve)
+    var sCurveShadowLift: CGFloat = 0.0 // Range: -0.25 to 0.25 (approx, relative to 0.25 shadow point)
+    var sCurveHighlightPull: CGFloat = 0.0 // Range: -0.25 to 0.25 (approx, relative to 0.75 highlight point)
+
+    // MARK: - Color Cast and Hue Refinements
+    var applyMidtoneNeutralization: Bool = false
+    var midtoneNeutralizationStrength: CGFloat = 1.0 // Range 0.0 to 1.0
+
+    var shadowTintAngle: CGFloat = 0.0 // Degrees, 0-360
+    var shadowTintColor: CodableColor = CodableColor(color: .clear) // User picks color, alpha is intensity
+    var shadowTintStrength: CGFloat = 0.0 // Range 0.0 to 1.0 (effectively opacity)
+
+    var highlightTintAngle: CGFloat = 0.0 // Degrees, 0-360
+    var highlightTintColor: CodableColor = CodableColor(color: .clear) // User picks color, alpha is intensity
+    var highlightTintStrength: CGFloat = 0.0 // Range 0.0 to 1.0 (effectively opacity)
+    
+    // For targeted hue/saturation adjustments
+    // Example: Cyan sky adjustment
+    var targetCyanHueRangeCenter: CGFloat = 180.0 // Degrees, e.g., 180 for cyan
+    var targetCyanHueRangeWidth: CGFloat = 30.0  // Degrees, e.g., +/- 15 degrees around center
+    var targetCyanSaturationAdjustment: CGFloat = 0.0 // -1.0 (desaturate) to 1.0 (saturate)
+    var targetCyanBrightnessAdjustment: CGFloat = 0.0 // -1.0 (darken) to 1.0 (brighten)
 
     // Default initializer
     init() {
@@ -126,7 +219,9 @@ struct ImageAdjustments: Codable {
         vignetteIntensity = 0.0
         vignetteRadius = 1.0
         cropRect = nil
-        rotation = 0.0
+        rotationAngle = 0
+        isMirroredHorizontally = false
+        isMirroredVertically = false
         scale = 1.0
         lutData = nil
         lutDimension = 64
@@ -144,8 +239,69 @@ struct ImageAdjustments: Codable {
         polyBlueLinear = 0.85
         polyBlueQuadratic = 0.05
         whiteBalanceSampledColor = nil
+        whiteBalanceTemperature = 6500
+        whiteBalanceTint = 0
+        sCurveShadowLift = 0.0
+        sCurveHighlightPull = 0.0
+        applyMidtoneNeutralization = false
+        midtoneNeutralizationStrength = 1.0
+        shadowTintAngle = 0.0
+        shadowTintColor = CodableColor(color: .clear)
+        shadowTintStrength = 0.0
+        highlightTintAngle = 0.0
+        highlightTintColor = CodableColor(color: .clear)
+        highlightTintStrength = 0.0
+        targetCyanHueRangeCenter = 180.0
+        targetCyanHueRangeWidth = 30.0
+        targetCyanSaturationAdjustment = 0.0
+        targetCyanBrightnessAdjustment = 0.0
     }
     
+    mutating func resetExposureContrast() {
+        exposure = 0.0
+        contrast = 1.0
+        brightness = 0.0
+        highlights = 0.0
+        shadows = 0.0
+        lights = 0.0
+        darks = 0.0
+        whites = 1.0
+        blacks = 0.0
+    }
+
+    mutating func resetPerceptualToneMapping() {
+        sCurveShadowLift = 0.0
+        sCurveHighlightPull = 0.0
+        gamma = 1.0 // Reset gamma as well
+    }
+
+    mutating func resetColorCastAndHueRefinements() {
+        applyMidtoneNeutralization = false
+        midtoneNeutralizationStrength = 1.0
+        shadowTintAngle = 0.0
+        shadowTintColor = CodableColor(color: .clear)
+        shadowTintStrength = 0.0
+        highlightTintAngle = 0.0
+        highlightTintColor = CodableColor(color: .clear)
+        highlightTintStrength = 0.0
+        targetCyanHueRangeCenter = 180.0
+        targetCyanHueRangeWidth = 30.0
+        targetCyanSaturationAdjustment = 0.0
+        targetCyanBrightnessAdjustment = 0.0
+    }
+    
+    mutating func resetGeometry() {
+        straightenAngle = 0.0
+        // vignetteIntensity = 0.0 // Keep vignette as it's more of an effect
+        // vignetteRadius = 1.0
+        cropRect = nil // Reset crop as it's a geometric adjustment
+        rotationAngle = 0
+        isMirroredHorizontally = false
+        isMirroredVertically = false
+        scale = 1.0 // Reset scale
+        perspectiveCorrection = nil // Also reset perspective
+    }
+
     // MARK: - Codable
     enum CodingKeys: String, CodingKey {
         case exposure, contrast, brightness, gamma, highlights, shadows, lights, darks, whites, blacks, labGlow, labFade
@@ -155,13 +311,19 @@ struct ImageAdjustments: Codable {
         case bwRedContribution, bwGreenContribution, bwBlueContribution
         case sharpness, luminanceNoise, noiseReduction
         case straightenAngle, vignetteIntensity, vignetteRadius
-        case cropRect, rotation, scale
+        case cropRect, rotationAngle, isMirroredHorizontally, isMirroredVertically, scale
         case lutData, lutDimension
         case redPolynomial, greenPolynomial, bluePolynomial
         case unsharpMaskRadius, unsharpMaskIntensity
         case perspectiveCorrection
         case filmBaseSamplePoint           // New
         case filmBaseSamplePointColor      // New
+        case whiteBalanceTemperature, whiteBalanceTint
+        case sCurveShadowLift, sCurveHighlightPull
+        case applyMidtoneNeutralization, midtoneNeutralizationStrength
+        case shadowTintAngle, shadowTintColor, shadowTintStrength
+        case highlightTintAngle, highlightTintColor, highlightTintStrength
+        case targetCyanHueRangeCenter, targetCyanHueRangeWidth, targetCyanSaturationAdjustment, targetCyanBrightnessAdjustment
         // Transient properties like whiteBalanceSampledColor, poly... are not included
     }
     
@@ -212,7 +374,9 @@ struct ImageAdjustments: Codable {
         try container.encode(vignetteIntensity, forKey: .vignetteIntensity)
         try container.encode(vignetteRadius, forKey: .vignetteRadius)
         try container.encodeIfPresent(cropRect.map(CodingRectangle.init), forKey: .cropRect)
-        try container.encode(rotation, forKey: .rotation)
+        try container.encode(rotationAngle, forKey: .rotationAngle)
+        try container.encode(isMirroredHorizontally, forKey: .isMirroredHorizontally)
+        try container.encode(isMirroredVertically, forKey: .isMirroredVertically)
         try container.encode(scale, forKey: .scale)
         try container.encodeIfPresent(lutData, forKey: .lutData)
         try container.encode(lutDimension, forKey: .lutDimension)
@@ -228,6 +392,22 @@ struct ImageAdjustments: Codable {
             let colorData = try NSKeyedArchiver.archivedData(withRootObject: color, requiringSecureCoding: false)
             try container.encode(colorData, forKey: .filmBaseSamplePointColor)
         }
+        try container.encode(whiteBalanceTemperature, forKey: .whiteBalanceTemperature)
+        try container.encode(whiteBalanceTint, forKey: .whiteBalanceTint)
+        try container.encode(sCurveShadowLift, forKey: .sCurveShadowLift)
+        try container.encode(sCurveHighlightPull, forKey: .sCurveHighlightPull)
+        try container.encode(applyMidtoneNeutralization, forKey: .applyMidtoneNeutralization)
+        try container.encode(midtoneNeutralizationStrength, forKey: .midtoneNeutralizationStrength)
+        try container.encode(shadowTintAngle, forKey: .shadowTintAngle)
+        try container.encode(shadowTintColor, forKey: .shadowTintColor)
+        try container.encode(shadowTintStrength, forKey: .shadowTintStrength)
+        try container.encode(highlightTintAngle, forKey: .highlightTintAngle)
+        try container.encode(highlightTintColor, forKey: .highlightTintColor)
+        try container.encode(highlightTintStrength, forKey: .highlightTintStrength)
+        try container.encode(targetCyanHueRangeCenter, forKey: .targetCyanHueRangeCenter)
+        try container.encode(targetCyanHueRangeWidth, forKey: .targetCyanHueRangeWidth)
+        try container.encode(targetCyanSaturationAdjustment, forKey: .targetCyanSaturationAdjustment)
+        try container.encode(targetCyanBrightnessAdjustment, forKey: .targetCyanBrightnessAdjustment)
     }
     
     public init(from decoder: Decoder) throws {
@@ -264,7 +444,9 @@ struct ImageAdjustments: Codable {
         vignetteIntensity = try container.decodeIfPresent(Float.self, forKey: .vignetteIntensity) ?? 0
         vignetteRadius = try container.decodeIfPresent(Float.self, forKey: .vignetteRadius) ?? 1
         cropRect = try container.decodeIfPresent(CodingRectangle.self, forKey: .cropRect)?.rect
-        rotation = try container.decodeIfPresent(Float.self, forKey: .rotation) ?? 0
+        rotationAngle = try container.decodeIfPresent(Int.self, forKey: .rotationAngle) ?? 0
+        isMirroredHorizontally = try container.decodeIfPresent(Bool.self, forKey: .isMirroredHorizontally) ?? false
+        isMirroredVertically = try container.decodeIfPresent(Bool.self, forKey: .isMirroredVertically) ?? false
         scale = try container.decodeIfPresent(Float.self, forKey: .scale) ?? 1
         lutData = try container.decodeIfPresent(Data.self, forKey: .lutData)
         lutDimension = try container.decodeIfPresent(Int.self, forKey: .lutDimension) ?? 64
@@ -281,6 +463,23 @@ struct ImageAdjustments: Codable {
         } else {
             filmBaseSamplePointColor = nil
         }
+        
+        whiteBalanceTemperature = try container.decodeIfPresent(CGFloat.self, forKey: .whiteBalanceTemperature) ?? 6500
+        whiteBalanceTint = try container.decodeIfPresent(CGFloat.self, forKey: .whiteBalanceTint) ?? 0
+        sCurveShadowLift = try container.decodeIfPresent(CGFloat.self, forKey: .sCurveShadowLift) ?? 0.0
+        sCurveHighlightPull = try container.decodeIfPresent(CGFloat.self, forKey: .sCurveHighlightPull) ?? 0.0
+        applyMidtoneNeutralization = try container.decodeIfPresent(Bool.self, forKey: .applyMidtoneNeutralization) ?? false
+        midtoneNeutralizationStrength = try container.decodeIfPresent(CGFloat.self, forKey: .midtoneNeutralizationStrength) ?? 1.0
+        shadowTintAngle = try container.decodeIfPresent(CGFloat.self, forKey: .shadowTintAngle) ?? 0.0
+        shadowTintColor = try container.decodeIfPresent(CodableColor.self, forKey: .shadowTintColor) ?? CodableColor(color: .clear)
+        shadowTintStrength = try container.decodeIfPresent(CGFloat.self, forKey: .shadowTintStrength) ?? 0.0
+        highlightTintAngle = try container.decodeIfPresent(CGFloat.self, forKey: .highlightTintAngle) ?? 0.0
+        highlightTintColor = try container.decodeIfPresent(CodableColor.self, forKey: .highlightTintColor) ?? CodableColor(color: .clear)
+        highlightTintStrength = try container.decodeIfPresent(CGFloat.self, forKey: .highlightTintStrength) ?? 0.0
+        targetCyanHueRangeCenter = try container.decodeIfPresent(CGFloat.self, forKey: .targetCyanHueRangeCenter) ?? 180.0
+        targetCyanHueRangeWidth = try container.decodeIfPresent(CGFloat.self, forKey: .targetCyanHueRangeWidth) ?? 30.0
+        targetCyanSaturationAdjustment = try container.decodeIfPresent(CGFloat.self, forKey: .targetCyanSaturationAdjustment) ?? 0.0
+        targetCyanBrightnessAdjustment = try container.decodeIfPresent(CGFloat.self, forKey: .targetCyanBrightnessAdjustment) ?? 0.0
         
         // Initialize transient properties not part of Codable
         polyRedLinear = 1.15

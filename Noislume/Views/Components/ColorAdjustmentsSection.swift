@@ -6,7 +6,7 @@ struct ColorAdjustmentsSection: View {
     var isDisabled: Bool
 
     var body: some View {
-        CollapsibleSection(title: "Color Adjustments", isExpanded: $isExpanded) {
+        CollapsibleSection(isExpanded: $isExpanded, title: "Color Adjustments") {
             VStack {
                 // Example: Temperature Slider
                 HStack {
@@ -47,6 +47,15 @@ struct ColorAdjustmentsSection: View {
                     // CIColorControls contrast is 0-4, with 1 being identity.
                     Slider(value: $adjustments.contrast, in: 0...4)
                     Text("\(adjustments.contrast, specifier: "%.2f")")
+                        .frame(width: 60, alignment: .trailing)
+                }
+                
+                // Slider for Gamma
+                HStack {
+                    Text("Gamma")
+                    // Gamma is typically 1.0 for no change. Range 0.2 to 3.0 for example.
+                    Slider(value: $adjustments.gamma, in: 0.2...3.0)
+                    Text("\(adjustments.gamma, specifier: "%.2f")")
                         .frame(width: 60, alignment: .trailing)
                 }
                 

@@ -9,7 +9,7 @@ struct CroppingSection: View {
     let onApplyCrop: () -> Void
     
     var body: some View {
-        CollapsibleSection(title: "Cropping & Geometry", isExpanded: $isExpanded) {
+        CollapsibleSection(isExpanded: $isExpanded, title: "Cropping & Geometry") {
             VStack {
                 Toggle("Show Crop Overlay", isOn: $showCropOverlay)
                     .disabled(viewModel.activeURL == nil)

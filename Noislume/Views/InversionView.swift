@@ -20,12 +20,17 @@ struct InversionView: View {
     var body: some View {
         VStack(spacing: 0) {
             HStack(spacing: 0) {
-                CroppingView(
-                    viewModel: viewModel,
-                    showCropOverlay: $showCropOverlay,
-                    showFileImporter: $showFileImporter
-                )
-                .padding()
+                VStack {
+                    CroppingView(
+                        viewModel: viewModel,
+                        showCropOverlay: $showCropOverlay,
+                        showFileImporter: $showFileImporter
+                    )
+                    .padding()
+                    if viewModel.hasImage {
+                        FilmStripView(viewModel: viewModel)
+                    }
+                }
                 .frame(maxWidth: .infinity)
                 
                 EditingSidebar(
@@ -36,9 +41,7 @@ struct InversionView: View {
                 )
             }
             .layoutPriority(1)
-            if viewModel.hasImage {
-                FilmStripView(viewModel: viewModel)
-            }
+            
         }
         .onAppear {
             setupNotifications()

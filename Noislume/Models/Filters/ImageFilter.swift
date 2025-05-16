@@ -9,9 +9,11 @@ protocol ImageFilter {
 enum FilterCategory {
     case filmBase
     case inversion
+    case colorAdjustments
     case toneAndContrast
     case colorGrading
     case sharpeningAndNoise
     case geometry
+    case toneAdjustments
     case optional
 }

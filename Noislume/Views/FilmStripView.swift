@@ -4,16 +4,16 @@ struct FilmStripView: View {
     @ObservedObject var viewModel: InversionViewModel
 
     var body: some View {
-        if !viewModel.imageFileQueue.isEmpty {
+        if !viewModel.imageNavigator.fileURLs.isEmpty {
             ScrollView(.horizontal, showsIndicators: true) {
                 LazyHStack(spacing: 8) {
-                    ForEach(Array(viewModel.imageFileQueue.enumerated()), id: \.element) { index, url in
+                    ForEach(Array(viewModel.imageNavigator.fileURLs.enumerated()), id: \.element) { index, url in
                         FilmStripItemView(
                             viewModel: viewModel,
                             imageURL: url,
-                            isActive: viewModel.activeImageIndex == index,
+                            isActive: viewModel.imageNavigator.activeIndex == index,
                             onSelect: {
-                                if viewModel.activeImageIndex != index {
+                                if viewModel.imageNavigator.activeIndex != index {
                                     viewModel.loadAndProcessImage(at: index)
                                 }
                             }

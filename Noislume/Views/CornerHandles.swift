@@ -6,7 +6,11 @@
 //
 
 import SwiftUI
-import AppKit // Import AppKit for NSEvent and NSApp
+#if os(macOS)
+import AppKit // For NSEvent.ModifierFlags
+#elseif os(iOS)
+import UIKit
+#endif
 
 struct CornerHandles: View {
     @EnvironmentObject var settings: AppSettings // Access AppSettings
@@ -51,10 +55,16 @@ struct CornerHandles: View {
                                 .onChanged { value in
                                     if initialCornerPointsForDrag == nil {
                                         initialCornerPointsForDrag = cornerPoints
+                                        #if os(macOS)
                                         // Latch the drag mode at the beginning of the gesture
                                         let actualModifiers = NSApp.currentEvent?.modifierFlags ?? NSEvent.ModifierFlags()
                                         let independentDragModifier = NSEvent.ModifierFlags(rawValue: UInt(settings.independentCornerDragModifierRawValue))
                                         isIndependentDragActiveForThisGesture = actualModifiers.contains(independentDragModifier)
+                                        #else
+                                        // On iOS, decide how to handle independent drag or default to false.
+                                        // For now, default to false, meaning it will use scale from opposite.
+                                        isIndependentDragActiveForThisGesture = false // Placeholder for iOS
+                                        #endif
                                     }
                                     guard let initialPoints = initialCornerPointsForDrag else { return }
 

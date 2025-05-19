@@ -1,21 +1,31 @@
+#if os(macOS)
 import AppKit
 
-@NSApplicationMain
-public class CustomApplication: NSApplication, NSApplicationDelegate {
+// @NSApplicationMain // Removed, NSPrincipalClass in Info.plist should be used
+@objc
+public class CustomApplication: NSApplication {
     private var isRecordingShortcut = false
     private var shortcutKeyDownHandler: ((NSEvent) -> Void)?
+    private let appDelegateInstance = AppDelegateMacOS() // Store the delegate instance
     
-    private let appDelegate = AppDelegate()
+    // Use the delegate set by NSApplicationDelegateAdaptor or manually in Info.plist
+    // This avoids creating a separate AppDelegate instance here.
+    private var noislumeAppDelegate: AppDelegateMacOS? {
+        return NSApp.delegate as? AppDelegateMacOS
+    }
     
+    // Standard initializers - required if any other init is present
+    // If no custom init logic, these can sometimes be omitted, but safer to include.
     public override init() {
         super.init()
-        self.delegate = appDelegate
+        self.delegate = self.appDelegateInstance // Set the delegate instance
     }
-    
+
     public required init?(coder: NSCoder) {
         super.init(coder: coder)
+        self.delegate = self.appDelegateInstance // Also set delegate here
     }
-    
+
     public override func sendEvent(_ event: NSEvent) {
         if event.type == .keyDown {
             if isRecordingShortcut {
@@ -35,7 +45,7 @@ public class CustomApplication: NSApplication, NSApplicationDelegate {
                         // Ensure targetKey is not empty before comparison
                         if targetKey.isEmpty { continue }
                         
-                        let targetModifiers = NSEvent.ModifierFlags(rawValue: storedShortcut.modifierFlags)
+                        let targetModifiers = NSEvent.ModifierFlags(rawValue: UInt(storedShortcut.modifierFlagsRawValue))
 
                         // Exact match: key must be same, and modifiers must be exactly the same set.
                         if currentKey == targetKey && currentModifiers == targetModifiers {
@@ -48,9 +58,14 @@ public class CustomApplication: NSApplication, NSApplicationDelegate {
                 }
             }
 
-            // Existing specific logic (e.g., Cmd+W for settings window)
-            // This can remain if it's not covered by a global shortcut, or be migrated to AppSettings if desired.
-            closeSettingsWindowIfOpen(event: event) // This might need to be re-evaluated. If Cmd+W is made a global shortcut, it would be handled above.
+            // Cmd+W handling for settings window
+            if event.modifierFlags.contains(.command) && event.charactersIgnoringModifiers?.lowercased() == "w" {
+                // Use the computed property `settingsWindow` which returns `settingsWindowController?.window`
+                if let keyWindow = NSApp.keyWindow, let activeSettingsWindow = noislumeAppDelegate?.settingsWindow, keyWindow == activeSettingsWindow {
+                    activeSettingsWindow.performClose(nil)
+                    // return // Consume Cmd+W only if it closed the settings window explicitly
+                }
+            }
         }
         super.sendEvent(event) // If no global shortcut consumed, or not a keyDown event, pass to standard handling
     }
@@ -95,21 +110,5 @@ public class CustomApplication: NSApplication, NSApplicationDelegate {
         self.isRecordingShortcut = false
         self.shortcutKeyDownHandler = nil
     }
-    
-    func closeSettingsWindowIfOpen(event: NSEvent) {
-        if event.modifierFlags.contains(.command) && event.charactersIgnoringModifiers?.lowercased() == "w" {
-            // Check if the key window is the settings window
-            if let keyWindow = NSApp.keyWindow, let settingsWindow = appDelegate.settingsWindow {
-                if keyWindow == settingsWindow {
-                    settingsWindow.performClose(nil) // Close the settings window
-                }
-                // Consume the Cmd+W event whether it was the settings window or not,
-                // to prevent closing other windows (like the main app window) with Cmd+W.
-                return
-            }
-            // If we couldn't get keyWindow or settingsWindow, still consume Cmd+W to be safe.
-            // Or, decide if default behavior should proceed. For now, let's consume it.
-            return
-        }
-    }
 }
+#endif

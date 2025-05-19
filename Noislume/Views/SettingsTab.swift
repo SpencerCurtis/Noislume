@@ -6,6 +6,7 @@ enum SettingsTab {
 }
 
 extension SettingsTab: CaseIterable {
+    #if os(macOS)
     var toolbarItemIdentifier: NSToolbarItem.Identifier {
         switch self {
         case .general:
@@ -25,6 +26,7 @@ extension SettingsTab: CaseIterable {
             return nil
         }
     }
+    #endif
 
     var title: String {
         switch self {

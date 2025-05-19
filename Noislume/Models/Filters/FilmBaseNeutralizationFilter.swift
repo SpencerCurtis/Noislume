@@ -62,8 +62,6 @@ class FilmBaseNeutralizationFilter: ImageFilter {
         colorMatrixFilter.aVector = aVector
         colorMatrixFilter.biasVector = biasVector
         
-        print("FilmBaseNeutralizationFilter: Applied with linearized base color (R: \(linearR), G: \(linearG), B: \(linearB)) -> Reciprocals (R: \(1.0/baseR), G: \(1.0/baseG), B: \(1.0/baseB))")
-
         return colorMatrixFilter.outputImage ?? image
     }
 } 

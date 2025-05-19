@@ -4,15 +4,12 @@ class PerceptualToneMappingFilter: ImageFilter {
     var category: FilterCategory = .colorAdjustments
 
     func apply(to image: CIImage, with adjustments: ImageAdjustments) -> CIImage {
-        // Use adjustments.gamma, ensuring it's not zero to avoid issues.
-        // A gamma of 1.0 means no change. Very small positive values are typical.
         let userGamma = adjustments.gamma > 0.01 ? adjustments.gamma : 1.0 
-        print("PerceptualToneMappingFilter: Applying Gamma (\(userGamma)) and S-Curve.")
 
         // 1. Apply Gamma Correction
         let gammaFilter = CIFilter.gammaAdjust()
         gammaFilter.inputImage = image
-        gammaFilter.power = Float(userGamma) // Use gamma from adjustments
+        gammaFilter.power = Float(userGamma)
         guard let gammaCorrectedImage = gammaFilter.outputImage else {
             print("PerceptualToneMappingFilter: Failed to apply gamma correction. Returning image as is.")
             return image
@@ -43,15 +40,12 @@ class PerceptualToneMappingFilter: ImageFilter {
         toneCurveFilter.point2 = CGPoint(x: p2_x, y: p2_y)
         toneCurveFilter.point3 = CGPoint(x: p3_x, y: p3_y)
         toneCurveFilter.point4 = CGPoint(x: p4_x, y: p4_y)
-        
-        print("PerceptualToneMappingFilter: S-Curve points - P0: (\(p0_x), \(p0_y)), P1: (\(p1_x), \(p1_y)), P2: (\(p2_x), \(p2_y)), P3: (\(p3_x), \(p3_y)), P4: (\(p4_x), \(p4_y))")
 
         guard let sCurveAppliedImage = toneCurveFilter.outputImage else {
             print("PerceptualToneMappingFilter: Failed to apply S-curve. Returning gamma corrected image.")
             return gammaCorrectedImage
         }
         
-        print("PerceptualToneMappingFilter: Successfully applied filter.")
         return sCurveAppliedImage
     }
 } 

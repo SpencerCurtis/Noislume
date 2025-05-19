@@ -1,8 +1,11 @@
 import Foundation
-import AppKit // For NSImage
 import os.log
 import CryptoKit
-
+#if os(macOS)
+import AppKit // For NSEvent.ModifierFlags
+#elseif os(iOS)
+import UIKit
+#endif
 /// Manages storing and retrieving generated thumbnail images from a file cache.
 class ThumbnailCacheManager {
     private let logger = Logger(subsystem: "com.SpencerCurtis.Noislume", category: "ThumbnailCacheManager")
@@ -68,12 +71,13 @@ class ThumbnailCacheManager {
     /// - Parameters:
     ///   - image: The NSImage thumbnail to save.
     ///   - imageURL: The URL of the original image this thumbnail represents.
-    func saveThumbnail(_ image: NSImage, for imageURL: URL) {
+    func saveThumbnail(_ image: PlatformImage, for imageURL: URL) {
         guard let fileURL = cacheFileURL(for: imageURL) else {
             logger.error("Cannot save thumbnail: could not get file URL for \(imageURL.absoluteString)")
             return
         }
 
+        #if os(macOS)
         // Convert NSImage to PNG Data
         guard let cgImage = image.cgImage(forProposedRect: nil, context: nil, hints: nil) else {
             logger.error("Failed to get CGImage for thumbnail of \(imageURL.absoluteString)")
@@ -84,10 +88,22 @@ class ThumbnailCacheManager {
             logger.error("Failed to get PNG data representation for thumbnail of \(imageURL.absoluteString)")
             return
         }
+        let dataToSave = pngData
+        #elseif os(iOS)
+        // For iOS, use pngData directly from UIImage
+        guard let pngData = image.pngData() else {
+            logger.error("Failed to get PNG data representation for iOS thumbnail of \(imageURL.absoluteString)")
+            return
+        }
+        let dataToSave = pngData
+        #else
+        logger.error("Thumbnail saving not implemented for this platform.")
+        return
+        #endif
 
         do {
-            try pngData.write(to: fileURL, options: .atomic)
-            logger.debug("Successfully saved thumbnail to file cache: \(fileURL.path)")
+            try dataToSave.write(to: fileURL, options: .atomic)
+//            logger.debug("Successfully saved thumbnail to file cache: \(fileURL.path)")
             // After saving, enforce the size limit asynchronously
             DispatchQueue.global(qos: .background).async {
                 self.enforceSizeLimit()

@@ -11,12 +11,20 @@ struct PositiveColorGradeControlsView: View {
 
             // White Balance Picker Button
             HStack {
-                Button(action: {
-                    viewModel.toggleWhiteBalanceSampling()
-                }) {
+                Button {
+                    if viewModel.isSamplingWhiteBalance {
+                        viewModel.isSamplingWhiteBalance = false
+                    } else {
+                        // If starting sampling, ensure other sampling modes are off.
+                        viewModel.isSamplingFilmBaseColor = false
+                        viewModel.isSamplingWhiteBalance = true
+                    }
+                } label: {
                     Label(viewModel.isSamplingWhiteBalance ? "Cancel" : "Pick White Balance", systemImage: "eyedropper")
                 }
+                #if os(macOS)
                 .help(viewModel.isSamplingWhiteBalance ? "Cancel white balance sampling" : "Click to sample a neutral color from the image for white balance")
+                #endif
                 Spacer() // Push button to the left if desired
             }
             .padding(.bottom, 5)
@@ -31,16 +39,11 @@ struct PositiveColorGradeControlsView: View {
             HStack {
                 Text("Temperature (+)")
                 Slider(
-                    value: $viewModel.positiveTemperature,
+                    value: $viewModel.currentAdjustments.positiveTemperature,
                     in: 2000...50000,
-                    step: 100,
-                    onEditingChanged: { editing in
-                        if !editing {
-                            viewModel.triggerImageProcessing()
-                        }
-                    }
+                    step: 100
                 )
-                TextField("", value: $viewModel.positiveTemperature, formatter: NumberFormatter.integer)
+                TextField("", value: $viewModel.currentAdjustments.positiveTemperature, formatter: NumberFormatter.integer)
                     .textFieldStyle(RoundedBorderTextFieldStyle())
                     .frame(width: 60)
             }
@@ -49,16 +52,11 @@ struct PositiveColorGradeControlsView: View {
             HStack {
                 Text("Tint (+)")
                 Slider(
-                    value: $viewModel.positiveTint,
+                    value: $viewModel.currentAdjustments.positiveTint,
                     in: -100...100,
-                    step: 1,
-                    onEditingChanged: { editing in
-                        if !editing {
-                            viewModel.triggerImageProcessing()
-                        }
-                    }
+                    step: 1
                 )
-                TextField("", value: $viewModel.positiveTint, formatter: NumberFormatter.integer)
+                TextField("", value: $viewModel.currentAdjustments.positiveTint, formatter: NumberFormatter.integer)
                     .textFieldStyle(RoundedBorderTextFieldStyle())
                     .frame(width: 60)
             }
@@ -67,16 +65,11 @@ struct PositiveColorGradeControlsView: View {
             HStack {
                 Text("Vibrance (+)")
                 Slider(
-                    value: $viewModel.positiveVibrance,
+                    value: $viewModel.currentAdjustments.positiveVibrance,
                     in: -1...1,
-                    step: 0.01,
-                    onEditingChanged: { editing in
-                        if !editing {
-                            viewModel.triggerImageProcessing()
-                        }
-                    }
+                    step: 0.01
                 )
-                TextField("", value: $viewModel.positiveVibrance, formatter: NumberFormatter.decimal(precision: 2))
+                TextField("", value: $viewModel.currentAdjustments.positiveVibrance, formatter: NumberFormatter.decimal(precision: 2))
                     .textFieldStyle(RoundedBorderTextFieldStyle())
                     .frame(width: 60)
             }
@@ -85,16 +78,11 @@ struct PositiveColorGradeControlsView: View {
             HStack {
                 Text("Saturation (+)")
                 Slider(
-                    value: $viewModel.positiveSaturation,
+                    value: $viewModel.currentAdjustments.positiveSaturation,
                     in: 0...2,
-                    step: 0.01,
-                    onEditingChanged: { editing in
-                        if !editing {
-                            viewModel.triggerImageProcessing()
-                        }
-                    }
+                    step: 0.01
                 )
-                TextField("", value: $viewModel.positiveSaturation, formatter: NumberFormatter.decimal(precision: 2))
+                TextField("", value: $viewModel.currentAdjustments.positiveSaturation, formatter: NumberFormatter.decimal(precision: 2))
                     .textFieldStyle(RoundedBorderTextFieldStyle())
                     .frame(width: 60)
             }

@@ -8,27 +8,38 @@ class AutoLevelsChannelNormalizationFilter: ImageFilter {
     private let ciContext = CIContext()
 
     func apply(to image: CIImage, with adjustments: ImageAdjustments) -> CIImage {
-        let imageExtent = image.extent
-        guard !imageExtent.isInfinite, !imageExtent.isEmpty else {
-            print("AutoLevelsChannelNormalizationFilter: Input image has invalid extent (\(imageExtent)). Returning original image.")
+        let originalImageExtent = image.extent
+        guard !originalImageExtent.isInfinite, !originalImageExtent.isEmpty else {
+            print("AutoLevelsChannelNormalizationFilter: Input image has invalid extent (\(originalImageExtent)). Returning original image.")
             return image
         }
 
-        // 1. Calculate total pixels and clip threshold
-        // totalPixels and pixelsToClipThreshold are not directly used if we find min/max intensity range without count-based clipping
-        // let totalPixels = Double(imageExtent.width * imageExtent.height)
-        // if totalPixels == 0 {
-        //     print("AutoLevelsChannelNormalizationFilter: Input image has zero pixels. Returning original image.")
-        //     return image
-        // }
-        // let clipPercentage = 0.001 // 0.1%
-        // let pixelsToClipThreshold = totalPixels * clipPercentage
+        // --- Downsample for analysis --- 
+        let analysisTargetWidth: CGFloat = 1024.0 // Target width for histogram analysis
+        var imageForAnalysis = image
 
-        // 2. Generate histogram using CIAreaHistogram
+        if originalImageExtent.width > analysisTargetWidth {
+            let scale = analysisTargetWidth / originalImageExtent.width
+            if scale.isFinite && scale > 0 && scale < 1.0 {
+                imageForAnalysis = image.transformed(by: .init(scaleX: scale, y: scale)).samplingLinear()
+            } else {
+                print("AutoLevelsChannelNormalizationFilter: Invalid scale \(scale) for analysis downsampling. Using original extent for analysis (may be slow or fail).")
+                // imageForAnalysis remains the original image
+            }
+        }
+        // --- End Downsample for analysis ---
+
+        let analysisImageExtent = imageForAnalysis.extent // Use extent of the (potentially) downsampled image
+        guard !analysisImageExtent.isInfinite, !analysisImageExtent.isEmpty else {
+            print("AutoLevelsChannelNormalizationFilter: Image for analysis has invalid extent (\(analysisImageExtent)). Returning original image.")
+            return image // Return original full-res image
+        }
+
+        // 2. Generate histogram using CIAreaHistogram on the imageForAnalysis
         let histogramFilter = CIFilter.areaHistogram()
-        histogramFilter.inputImage = image
-        histogramFilter.extent = imageExtent
-        histogramFilter.scale = 1.0 // Assuming input image data is normalized [0,1]
+        histogramFilter.inputImage = imageForAnalysis // Use the downsampled image
+        histogramFilter.extent = analysisImageExtent    // Use extent of the downsampled image
+        histogramFilter.scale = 1.0 
         let histogramBinCount = 256
         histogramFilter.count = histogramBinCount
         
@@ -69,15 +80,10 @@ class AutoLevelsChannelNormalizationFilter: ImageFilter {
         let (blackR_norm, whiteR_norm) = findMinMaxIntensityInChannel(histogram: histR, binCount: histogramBinCount)
         let (blackG_norm, whiteG_norm) = findMinMaxIntensityInChannel(histogram: histG, binCount: histogramBinCount)
         let (blackB_norm, whiteB_norm) = findMinMaxIntensityInChannel(histogram: histB, binCount: histogramBinCount)
-        
-        print("AutoLevelsChannelNormalizationFilter: Calculated Normalization Ranges (0% intensity clip):")
-        print("  Red:   Black=\(String(format: "%.4f", blackR_norm)), White=\(String(format: "%.4f", whiteR_norm))")
-        print("  Green: Black=\(String(format: "%.4f", blackG_norm)), White=\(String(format: "%.4f", whiteG_norm))")
-        print("  Blue:  Black=\(String(format: "%.4f", blackB_norm)), White=\(String(format: "%.4f", whiteB_norm))")
 
-        // 6. Apply normalization using CIColorPolynomial
+        // 6. Apply normalization using CIColorPolynomial to the original full-resolution image
         let colorPoly = CIFilter.colorPolynomial()
-        colorPoly.inputImage = image
+        colorPoly.inputImage = image // IMPORTANT: Apply to the original full-resolution image
         
         func createCoefficients(blackPoint: CGFloat, whitePoint: CGFloat) -> CIVector {
             let denominator = whitePoint - blackPoint

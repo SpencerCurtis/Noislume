@@ -8,16 +8,18 @@ class ThumbnailManager: ObservableObject {
     private let processor: CoreImageProcessor // Dependency
     private let fileCacheManager: ThumbnailCacheManager // Add file cache manager
     private let appSettings: AppSettings // Add app settings
+    private let persistenceManager: PersistenceManager // Add persistence manager
     private let thumbnailWidth: CGFloat
     
     // Cache and state
     // Use NSCache for automatic memory management
-    private var thumbnailCache = NSCache<NSURL, NSImage>()
+    private var thumbnailCache = NSCache<NSURL, PlatformImage>()
     @Published private(set) var isLoadingThumbnail: [URL: Bool] = [:] // Tracks if a specific thumbnail is loading
     private var thumbnailGenerationQueue: [URL] = []
     private var activeThumbnailTasksCount: Int = 0
     private let maxConcurrentThumbnailJobs: Int = 1 // Limit concurrent thumbnail tasks - Reduced from 2 to 1
     private var storedAdjustments: [URL: ImageAdjustments] = [:] // Store adjustments per URL
+    private let placeholderImage: PlatformImage
 
     var isEmpty: Bool { 
         thumbnailGenerationQueue.isEmpty && activeThumbnailTasksCount == 0 && isLoadingThumbnail.values.filter { $0 }.isEmpty
@@ -26,22 +28,40 @@ class ThumbnailManager: ObservableObject {
     init(processor: CoreImageProcessor, 
          fileCacheManager: ThumbnailCacheManager, // Inject manager
          appSettings: AppSettings,             // Inject settings
-         thumbnailWidth: CGFloat = 160, 
-         cacheCountLimit: Int = 50, 
-         cacheTotalCostLimitMB: Int = 20) {
+         persistenceManager: PersistenceManager) { // Inject persistence manager
         self.processor = processor
-        self.fileCacheManager = fileCacheManager // Store injected manager
-        self.appSettings = appSettings           // Store injected settings
-        self.thumbnailWidth = thumbnailWidth
-        self.thumbnailCache.countLimit = cacheCountLimit
+        self.fileCacheManager = fileCacheManager
+        self.appSettings = appSettings
+        self.persistenceManager = persistenceManager
+        self.thumbnailWidth = CGFloat(appSettings.thumbnailWidth)
+        self.thumbnailCache.countLimit = appSettings.thumbnailCacheCountLimit
+        
+        let cacheTotalCostLimitMB = appSettings.thumbnailCacheSizeLimitMB
         self.thumbnailCache.totalCostLimit = cacheTotalCostLimitMB * 1024 * 1024 // Convert MB to Bytes
-        logger.info("Initialized ThumbnailManager with width: \(thumbnailWidth), cache count limit: \(self.thumbnailCache.countLimit), total cost limit: \(self.thumbnailCache.totalCostLimit) bytes")
+        logger.info("Initialized ThumbnailManager with width: \(self.thumbnailWidth), cache count limit: \(self.thumbnailCache.countLimit), total cost limit: \(self.thumbnailCache.totalCostLimit) bytes")
+
+        // Create a placeholder image (e.g., a gray square)
+        #if os(macOS)
+        let image = NSImage(size: NSSize(width: 100, height: 100))
+        image.lockFocus()
+        PlatformColor.lightGray.setFill()
+        NSRect(x: 0, y: 0, width: 100, height: 100).fill()
+        image.unlockFocus()
+        self.placeholderImage = image as PlatformImage
+        #elseif os(iOS)
+        UIGraphicsBeginImageContextWithOptions(CGSize(width: 100, height: 100), false, 0.0)
+        PlatformColor.lightGray.setFill()
+        UIRectFill(CGRect(x: 0, y: 0, width: 100, height: 100))
+        let image = UIGraphicsGetImageFromCurrentImageContext() ?? UIImage()
+        UIGraphicsEndImageContext()
+        self.placeholderImage = image as PlatformImage
+        #endif
     }
     
     /// Retrieves a thumbnail from the cache.
     /// - Parameter url: The URL of the image.
-    /// - Returns: The cached NSImage or nil if not found.
-    func getThumbnail(for url: URL) -> NSImage? {
+    /// - Returns: The cached PlatformImage or nil if not found.
+    func getThumbnail(for url: URL) -> PlatformImage? {
         // 1. Check in-memory NSCache
         if let cachedImage = thumbnailCache.object(forKey: url as NSURL) {
             logger.trace("Thumbnail for \(url.lastPathComponent) found in NSCache (memory).")
@@ -51,14 +71,14 @@ class ThumbnailManager: ObservableObject {
         // 2. Check file cache if enabled
         if appSettings.enableThumbnailFileCache {
             if let fileData = fileCacheManager.loadThumbnailData(for: url) {
-                if let image = NSImage(data: fileData) {
+                if let image = PlatformImage(data: fileData) {
                     logger.debug("Thumbnail for \(url.lastPathComponent) loaded from file cache, adding to NSCache.")
                     // Add to in-memory cache for faster subsequent access
-                    let cost = image.tiffRepresentation?.count ?? 0 // Approximate cost
+                    let cost = fileData.count // Estimate cost based on file size
                     thumbnailCache.setObject(image, forKey: url as NSURL, cost: cost)
                     return image
                 } else {
-                    logger.warning("Could not create NSImage from file cached data for \(url.lastPathComponent). File might be corrupt.")
+                    logger.warning("Could not create PlatformImage from file cached data for \(url.lastPathComponent). File might be corrupt.")
                     // Optionally remove the corrupt file
                     fileCacheManager.removeThumbnail(for: url)
                 }
@@ -127,40 +147,69 @@ class ThumbnailManager: ObservableObject {
     // MARK: - Private Processing Logic
     
     private func processNextThumbnailsInQueue() {
-        while activeThumbnailTasksCount < maxConcurrentThumbnailJobs && !thumbnailGenerationQueue.isEmpty {
-            let urlToProcess = thumbnailGenerationQueue.removeFirst()
-
-            // Double-check cache/loading status *after* removing from queue
-            guard thumbnailCache.object(forKey: urlToProcess as NSURL) == nil && isLoadingThumbnail[urlToProcess] != true else {
-                logger.info("Thumbnail for \(urlToProcess.lastPathComponent) already cached or in progress after dequeue. Skipping.")
-                continue // Skip if already cached or loading
+        guard activeThumbnailTasksCount < maxConcurrentThumbnailJobs, !thumbnailGenerationQueue.isEmpty else {
+            if thumbnailGenerationQueue.isEmpty && activeThumbnailTasksCount == 0 {
+                logger.info("Thumbnail generation queue is empty and all tasks finished.")
+            } else if activeThumbnailTasksCount >= maxConcurrentThumbnailJobs {
+                logger.debug("Max concurrent thumbnail tasks reached (\(self.activeThumbnailTasksCount)). Waiting for tasks to complete. Queue size: \(self.thumbnailGenerationQueue.count)")
             }
+            return
+        }
 
-            // Fetch the stored adjustments for this URL
-            let adjustmentsForThumbnail = storedAdjustments[urlToProcess]
+        let urlToProcess = thumbnailGenerationQueue.removeFirst()
+        activeThumbnailTasksCount += 1
+        isLoadingThumbnail[urlToProcess] = true
 
-            activeThumbnailTasksCount += 1
-            isLoadingThumbnail[urlToProcess] = true // Mark as loading *before* starting async task
-            logger.debug("Starting thumbnail generation for \(urlToProcess.lastPathComponent). Active tasks: \(self.activeThumbnailTasksCount)")
+        logger.debug("Starting thumbnail generation for \(urlToProcess.lastPathComponent). Active tasks: \(self.activeThumbnailTasksCount)")
 
-            Task {
-                // Generate thumbnail using the provided processor and stored adjustments
-                let cgImage = await self.processor.generateThumbnail(
-                    from: urlToProcess, 
-                    targetWidth: self.thumbnailWidth,
-                    adjustments: adjustmentsForThumbnail // Pass adjustments
-                )
-                
-                // Update state back on the main actor
+        // Get adjustments for this specific URL
+        // Fallback to default adjustments if none are stored (e.g., initial load)
+        let adjustmentsForThumbnail = storedAdjustments[urlToProcess] ?? ImageAdjustments()
+
+
+        // Ensure this task is detached if it's long-running
+        // and to avoid holding up the ThumbnailManager actor.
+        Task.detached { [weak self] in // Use weak self
+            guard let self = self else { return }
+
+            // <<< START SECURITY SCOPED ACCESS >>>
+            let didStartAccessing = urlToProcess.startAccessingSecurityScopedResource()
+            if !didStartAccessing {
+                self.logger.error("Could not start security-scoped access for thumbnail generation: \(urlToProcess.lastPathComponent)")
+                // Post back to main actor to update state
                 await MainActor.run {
-                    self.handleThumbnailGenerationResult(cgImage: cgImage, for: urlToProcess)
-                    // Update counts and process next regardless of success/failure
+                    self.handleThumbnailGenerationResult(cgImage: nil, for: urlToProcess)
                     self.isLoadingThumbnail[urlToProcess] = false
                     self.activeThumbnailTasksCount -= 1
-                    self.logger.debug("Finished thumbnail task for \(urlToProcess.lastPathComponent). Active tasks: \(self.activeThumbnailTasksCount)")
-                    // Attempt to process more items from the queue
+                    self.logger.debug("Finished thumbnail task (access failed) for \(urlToProcess.lastPathComponent). Active tasks: \(self.activeThumbnailTasksCount)")
                     self.processNextThumbnailsInQueue()
                 }
+                return
+            }
+            self.logger.debug("Successfully started security-scoped access for thumbnail generation: \(urlToProcess.lastPathComponent)")
+
+            defer {
+                urlToProcess.stopAccessingSecurityScopedResource()
+                self.logger.debug("Stopped security-scoped access for thumbnail generation: \(urlToProcess.lastPathComponent)")
+            }
+            // <<< END SECURITY SCOPED ACCESS >>>
+
+            // Generate thumbnail using the provided processor and stored adjustments
+            let cgImage = await self.processor.generateThumbnail(
+                from: urlToProcess, 
+                targetWidth: self.thumbnailWidth,
+                adjustments: adjustmentsForThumbnail // Pass adjustments
+            )
+            
+            // Update state back on the main actor
+            await MainActor.run {
+                self.handleThumbnailGenerationResult(cgImage: cgImage, for: urlToProcess)
+                // Update counts and process next regardless of success/failure
+                self.isLoadingThumbnail[urlToProcess] = false
+                self.activeThumbnailTasksCount -= 1
+                self.logger.debug("Finished thumbnail task for \(urlToProcess.lastPathComponent). Active tasks: \(self.activeThumbnailTasksCount)")
+                // Attempt to process more items from the queue
+                self.processNextThumbnailsInQueue()
             }
         }
         // Logging for queue state
@@ -176,21 +225,26 @@ class ThumbnailManager: ObservableObject {
         }
         
         #if os(macOS)
-        let nsImage = NSImage(cgImage: cgImg, size: NSSize(width: cgImg.width, height: cgImg.height))
+        let platformImage = PlatformImage(cgImage: cgImg, size: NSSize(width: cgImg.width, height: cgImg.height))
         // Calculate cost (bytes) of the thumbnail
         let cost = cgImg.height * cgImg.bytesPerRow
         // Store in NSCache using NSURL as key and calculated cost
-        self.thumbnailCache.setObject(nsImage, forKey: url as NSURL, cost: cost)
+        self.thumbnailCache.setObject(platformImage, forKey: url as NSURL, cost: cost)
         self.logger.debug("Successfully generated and cached thumbnail for \(url.lastPathComponent) in NSCache with cost \(cost) bytes")
         
         // Also save to file cache if enabled
         if appSettings.enableThumbnailFileCache {
-            fileCacheManager.saveThumbnail(nsImage, for: url)
+            fileCacheManager.saveThumbnail(platformImage, for: url)
         }
-        #else
-        // Placeholder for potential future iOS/visionOS support
-        // self.thumbnailCache.setObject(UIImage(cgImage: cgImg), forKey: url as NSURL, cost: cost)
-        logger.warning("Thumbnail generated but caching is only implemented for macOS (NSImage).")
+        #elseif os(iOS)
+        let platformImage = PlatformImage(cgImage: cgImg)
+        let cost = cgImg.height * cgImg.bytesPerRow // Approximate cost
+        self.thumbnailCache.setObject(platformImage, forKey: url as NSURL, cost: cost)
+        logger.debug("Successfully generated and cached thumbnail for \(url.lastPathComponent) on iOS in NSCache with cost \(cost) bytes")
+        if appSettings.enableThumbnailFileCache {
+             // Assuming fileCacheManager.saveThumbnail can handle UIImage or we adapt it.
+            fileCacheManager.saveThumbnail(platformImage, for: url)
+        }
         #endif
     }
     
@@ -222,5 +276,46 @@ class ThumbnailManager: ObservableObject {
         isLoadingThumbnail[url] = false 
         // Request regeneration (will add to front of queue)
         requestThumbnailIfNeeded(for: url)
+    }
+
+    // Generates a thumbnail from a full image URL
+    func generateThumbnail(for url: URL, targetSize: CGSize = CGSize(width: 200, height: 200)) async -> PlatformImage? {
+        // Implement the logic to generate a thumbnail from a full image URL
+        // This is a placeholder and should be replaced with the actual implementation
+        return nil
+    }
+
+    /// Generates a placeholder image.
+    /// - Returns: A `PlatformImage` to be used as a placeholder.
+    public func getPlaceholderImage() -> PlatformImage {
+        return placeholderImage
+    }
+}
+
+// Extension to CGImageSource to simplify thumbnail creation
+extension CGImageSource {
+    func createThumbnail(targetSize: CGSize) -> PlatformImage? {
+        guard let properties = CGImageSourceCopyPropertiesAtIndex(self, 0, nil) as? [CFString: Any],
+              let _ = properties[kCGImagePropertyPixelWidth] as? CGFloat,
+              let _ = properties[kCGImagePropertyPixelHeight] as? CGFloat else {
+            return nil
+        }
+
+        let options: [CFString: Any] = [
+            kCGImageSourceCreateThumbnailFromImageIfAbsent: true,
+            kCGImageSourceCreateThumbnailWithTransform: true,
+            kCGImageSourceShouldCacheImmediately: true, // Cache immediately if possible
+            kCGImageSourceThumbnailMaxPixelSize: max(targetSize.width, targetSize.height) * 2 // Request a slightly larger thumbnail for quality
+        ]
+
+        guard let thumbnailCGImage = CGImageSourceCreateThumbnailAtIndex(self, 0, options as CFDictionary) else {
+            return nil
+        }
+
+        #if os(macOS)
+        return NSImage(cgImage: thumbnailCGImage, size: NSSize(width: thumbnailCGImage.width, height: thumbnailCGImage.height))
+        #elseif os(iOS)
+        return UIImage(cgImage: thumbnailCGImage)
+        #endif
     }
 } 

@@ -5,7 +5,6 @@ class ExposureContrastBrightnessFilter: ImageFilter {
 
     func apply(to image: CIImage, with adjustments: ImageAdjustments) -> CIImage {
         var currentImage = image
-        let activeFilter = "ExposureContrastBrightnessFilter:"
 
         // 1. Apply Exposure
         if adjustments.exposure != 0.0 {
@@ -13,10 +12,9 @@ class ExposureContrastBrightnessFilter: ImageFilter {
             exposureFilter.inputImage = currentImage
             exposureFilter.ev = adjustments.exposure
             if let output = exposureFilter.outputImage {
-                print("\(activeFilter) Applied Exposure: \(adjustments.exposure)")
                 currentImage = output
             } else {
-                print("\(activeFilter) Failed to apply exposure. EV: \(adjustments.exposure)")
+                print("ExposureContrastBrightnessFilter: Failed to apply exposure. EV: \(adjustments.exposure)")
             }
         }
 
@@ -34,19 +32,11 @@ class ExposureContrastBrightnessFilter: ImageFilter {
             // colorControlsFilter.saturation = 1.0 
             
             if let output = colorControlsFilter.outputImage {
-                print("\(activeFilter) Applied Contrast: \(adjustments.contrast), Brightness: \(adjustments.brightness)")
                 currentImage = output
             } else {
-                print("\(activeFilter) Failed to apply color controls. Contrast: \(adjustments.contrast), Brightness: \(adjustments.brightness)")
+                print("ExposureContrastBrightnessFilter: Failed to apply color controls. Contrast: \(adjustments.contrast), Brightness: \(adjustments.brightness)")
             }
         }
-        
-        if currentImage === image && adjustments.exposure == 0.0 && !shouldApplyColorControls {
-             print("\(activeFilter) No adjustments applied (exposure, contrast, brightness are at default values).")
-        } else if currentImage !== image {
-             print("\(activeFilter) Successfully applied filter adjustments.")
-        }
-
 
         return currentImage
     }

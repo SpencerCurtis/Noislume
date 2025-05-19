@@ -4,8 +4,6 @@ class InversionFilterV2: ImageFilter {
     var category: FilterCategory = .inversion
 
     func apply(to image: CIImage, with adjustments: ImageAdjustments) -> CIImage {
-        print("InversionFilterV2: Applying simple 1.0 - channel inversion.")
-
         let matrix = CIFilter.colorMatrix()
         matrix.inputImage = image
         // R' = -1*R + 1
@@ -21,8 +19,6 @@ class InversionFilterV2: ImageFilter {
             print("InversionFilterV2: Failed to apply color matrix. Returning original image.")
             return image
         }
-        
-        print("InversionFilterV2: Successfully applied simple inversion.")
         
         // Clamp the output to ensure values are in [0,1] range for subsequent filters.
         let clampFilter = CIFilter.colorClamp()

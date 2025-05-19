@@ -1,14 +1,19 @@
-import AppKit
+#if os(macOS)
 import SwiftUI
 import Combine
+import AppKit // Explicitly import AppKit for macOS specifics
 
-class AppDelegate: NSObject, NSApplicationDelegate, NSToolbarDelegate, ObservableObject {
-    fileprivate let settings = AppSettings()
+@MainActor
+class AppDelegateMacOS: NSObject, NSApplicationDelegate, NSToolbarDelegate, ObservableObject {
+    fileprivate let settings = AppSettings.shared // Use shared instance
     internal var settingsWindowController: NSWindowController?
-    private var mainMenuManager = MainMenuManager()
+    internal var mainMenuManager = MainMenuManager()
+    let viewModel = InversionViewModel() // Create its own instance for now
 
+    // Published property to track the selected settings tab
     @Published fileprivate var selectedSettingsTab: SettingsTab = .general {
         didSet {
+            // Update the toolbar selection when the tab changes programmatically
             settingsWindowController?.window?.toolbar?.selectedItemIdentifier = NSToolbarItem.Identifier(rawValue: selectedSettingsTab.toolbarItemIdentifier.rawValue)
         }
     }
@@ -18,29 +23,30 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSToolbarDelegate, Observabl
     }
 
     func applicationDidFinishLaunching(_ notification: Notification) {
-        let defaultRect = NSRect(x: 0, y: 0, width: 800, height: 600)
-
+        // Standard window setup
+        let defaultRect = NSRect(x: 0, y: 0, width: 1000, height: 700) // Slightly larger default
         let window = NSWindow(
             contentRect: defaultRect,
-            styleMask: [.titled, .closable, .miniaturizable, .resizable],
+            styleMask: [.titled, .closable, .miniaturizable, .resizable, .fullSizeContentView],
             backing: .buffered,
             defer: false
         )
-        let frameAutosaveName = "com.SpencerCurtis.Noislume.MainWindowFrame"
 
-        let windowController = NSWindowController(window: window)
-        windowController.windowFrameAutosaveName = frameAutosaveName
+        let frameAutosaveName = "com.SpencerCurtis.Noislume.MainWindowFrame"
+        window.setFrameAutosaveName(frameAutosaveName) // Use the convenience method
 
         if !window.setFrameUsingName(frameAutosaveName) {
             window.center()
         }
 
         let contentView = ContentView()
-            .environmentObject(settings)
+            .environmentObject(settings) // Pass AppSettings to the ContentView environment
+            .environmentObject(self.viewModel) // Pass InversionViewModel to the ContentView environment
 
-        windowController.window?.contentView = NSHostingView(rootView: contentView)
-        windowController.showWindow(nil)
-
+        window.contentView = NSHostingView(rootView: contentView)
+        window.makeKeyAndOrderFront(nil)
+        
+        // Set up the main menu
         NSApp.mainMenu = mainMenuManager.createMainMenu(settings: self.settings)
         mainMenuManager.updateShortcuts(on: NSApp.mainMenu!, using: self.settings)
     }
@@ -48,14 +54,14 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSToolbarDelegate, Observabl
     @objc internal func showSettings() {
         if settingsWindowController == nil {
             let settingsWindow = NSWindow(
-                contentRect: NSRect(x: 0, y: 0, width: 480, height: 300),
-                styleMask: [.titled, .closable, .unifiedTitleAndToolbar],
+                contentRect: NSRect(x: 0, y: 0, width: 520, height: 350), // Adjusted size
+                styleMask: [.titled, .closable, .miniaturizable, .resizable, .unifiedTitleAndToolbar],
                 backing: .buffered,
                 defer: false
             )
-            settingsWindow.title = "Settings"
+            settingsWindow.title = "Noislume Settings"
             settingsWindow.titlebarAppearsTransparent = true
-            settingsWindow.toolbarStyle = .preference
+            settingsWindow.toolbarStyle = .preference // Standard preference toolbar style
 
             let toolbar = NSToolbar(identifier: "SettingsToolbar")
             toolbar.delegate = self
@@ -64,18 +70,23 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSToolbarDelegate, Observabl
             toolbar.displayMode = .iconAndLabel
             settingsWindow.toolbar = toolbar
             
+            // Ensure SettingsViewWrapper is used correctly
             let settingsViewWrapper = SettingsViewWrapper(appDelegate: self)
+                .environmentObject(self.settings)
+                .environmentObject(self.viewModel) // Pass the viewModel here
             settingsWindow.contentView = NSHostingView(rootView: settingsViewWrapper)
+            
             settingsWindowController = NSWindowController(window: settingsWindow)
-
+            // Ensure the initially selected tab in the toolbar matches the state
             settingsWindow.toolbar?.selectedItemIdentifier = NSToolbarItem.Identifier(rawValue: selectedSettingsTab.toolbarItemIdentifier.rawValue)
         }
 
         settingsWindowController?.showWindow(nil)
-        settingsWindowController?.window?.center()
-        NSApp.activate(ignoringOtherApps: true)
+        settingsWindowController?.window?.center() // Center the settings window
+        NSApp.activate(ignoringOtherApps: true) // Bring the app to the front
     }
 
+    // MARK: - NSToolbarDelegate Methods
     func toolbarDefaultItemIdentifiers(_ toolbar: NSToolbar) -> [NSToolbarItem.Identifier] {
         return SettingsTab.allCases.map { $0.toolbarItemIdentifier }
     }
@@ -95,10 +106,14 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSToolbarDelegate, Observabl
 
         let toolbarItem = NSToolbarItem(itemIdentifier: itemIdentifier)
         toolbarItem.label = settingsTab.title
-        toolbarItem.image = NSImage(systemSymbolName: settingsTab.systemImageName, accessibilityDescription: settingsTab.title)
+        if let image = NSImage(systemSymbolName: settingsTab.systemImageName, accessibilityDescription: settingsTab.title) {
+            toolbarItem.image = image
+        } else {
+            // Fallback or log error if symbol not found
+            print("Warning: System symbol '\(settingsTab.systemImageName)' not found for toolbar item.")
+        }
         toolbarItem.target = self
         toolbarItem.action = #selector(handleToolbarTabSelected(_:))
-
         return toolbarItem
     }
 
@@ -108,34 +123,49 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSToolbarDelegate, Observabl
         }
     }
     
-    @objc func handleOpenFile() {
+    // MARK: - Menu Action Handlers (via NotificationCenter)
+    @objc func handleOpenFileAction() { // Renamed for clarity, matches MainMenuManager iOS selector
         NotificationCenter.default.post(name: .openFile, object: nil)
     }
 
-    @objc func handleSaveFile() {
+    @objc func handleSaveFileAction() { // Renamed for clarity
         NotificationCenter.default.post(name: .saveFile, object: nil)
     }
 
-    @objc func handleToggleCrop() {
+    @objc func handleToggleCropAction() { // Renamed for clarity
         NotificationCenter.default.post(name: .toggleCrop, object: nil)
     }
 
-    @objc func handleResetAdjustments() {
+    @objc func handleResetAdjustmentsAction() { // Renamed for clarity
         NotificationCenter.default.post(name: .resetAdjustments, object: nil)
     }
-}
 
-struct SettingsViewWrapper: View {
-    @ObservedObject var appDelegate: AppDelegate
-
-    var body: some View {
-        let selectedTabBinding = Binding<SettingsTab>(
-            get: { appDelegate.selectedSettingsTab },
-            set: { newValue in
-                appDelegate.selectedSettingsTab = newValue
-            }
-        )
-        SettingsView(settings: appDelegate.settings, selectedTab: selectedTabBinding)
-            .environmentObject(appDelegate.settings)
+    // MARK: - Zoom Actions
+    @objc func handleZoomInAction() {
+        NotificationCenter.default.post(name: .zoomIn, object: nil)
+    }
+    
+    @objc func handleZoomOutAction() {
+        NotificationCenter.default.post(name: .zoomOut, object: nil)
+    }
+    
+    @objc func handleZoomToFitAction() {
+        NotificationCenter.default.post(name: .zoomToFit, object: nil)
     }
 }
+
+// Wrapper view for Settings, ensuring AppDelegateMacOS is an ObservableObject
+struct SettingsViewWrapper: View {
+    @ObservedObject var appDelegate: AppDelegateMacOS
+
+    var body: some View {
+        // Binding to allow SettingsView to change the selected tab in AppDelegateMacOS
+        let selectedTabBinding = Binding<SettingsTab>(
+            get: { appDelegate.selectedSettingsTab },
+            set: { appDelegate.selectedSettingsTab = $0 }
+        )
+        SettingsView(settings: appDelegate.settings, selectedTab: selectedTabBinding)
+            // .environmentObject(appDelegate.settings) // Already passed via constructor to SettingsView
+    }
+}
+#endif 

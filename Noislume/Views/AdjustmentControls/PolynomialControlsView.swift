@@ -18,22 +18,18 @@ struct PolynomialControlsView: View {
                 .font(.headline)
             
             // Red Channel
-            Group {
+            VStack(alignment: .leading) {
                 Text("Red Channel").font(.subheadline)
                 HStack {
                     Text("Linear (Y):")
-                    Slider(value: $viewModel.polyRedLinear, in: 0.0...2.0, step: 0.01) { editing in
-                        if !editing { viewModel.triggerImageProcessing() }
-                    }
-                    TextField("", value: $viewModel.polyRedLinear, formatter: formatter)
+                    Slider(value: $viewModel.currentAdjustments.polyRedLinear, in: 0.0...2.0, step: 0.01)
+                    TextField("", value: $viewModel.currentAdjustments.polyRedLinear, formatter: formatter)
                         .textFieldStyle(RoundedBorderTextFieldStyle()).frame(width: 60)
                 }
                 HStack {
                     Text("Quadratic (Z):")
-                    Slider(value: $viewModel.polyRedQuadratic, in: -1.0...1.0, step: 0.01) { editing in
-                        if !editing { viewModel.triggerImageProcessing() }
-                    }
-                    TextField("", value: $viewModel.polyRedQuadratic, formatter: formatter)
+                    Slider(value: $viewModel.currentAdjustments.polyRedQuadratic, in: -1.0...1.0, step: 0.01)
+                    TextField("", value: $viewModel.currentAdjustments.polyRedQuadratic, formatter: formatter)
                         .textFieldStyle(RoundedBorderTextFieldStyle()).frame(width: 60)
                 }
             }
@@ -41,22 +37,18 @@ struct PolynomialControlsView: View {
             Divider().padding(.vertical, 4)
             
             // Green Channel
-            Group {
+            VStack(alignment: .leading) {
                 Text("Green Channel").font(.subheadline)
                 HStack {
                     Text("Linear (Y):")
-                    Slider(value: $viewModel.polyGreenLinear, in: 0.0...2.0, step: 0.01) { editing in
-                        if !editing { viewModel.triggerImageProcessing() }
-                    }
-                    TextField("", value: $viewModel.polyGreenLinear, formatter: formatter)
+                    Slider(value: $viewModel.currentAdjustments.polyGreenLinear, in: 0.0...2.0, step: 0.01)
+                    TextField("", value: $viewModel.currentAdjustments.polyGreenLinear, formatter: formatter)
                         .textFieldStyle(RoundedBorderTextFieldStyle()).frame(width: 60)
                 }
                 HStack {
                     Text("Quadratic (Z):")
-                    Slider(value: $viewModel.polyGreenQuadratic, in: -1.0...1.0, step: 0.01) { editing in
-                        if !editing { viewModel.triggerImageProcessing() }
-                    }
-                    TextField("", value: $viewModel.polyGreenQuadratic, formatter: formatter)
+                    Slider(value: $viewModel.currentAdjustments.polyGreenQuadratic, in: -1.0...1.0, step: 0.01)
+                    TextField("", value: $viewModel.currentAdjustments.polyGreenQuadratic, formatter: formatter)
                         .textFieldStyle(RoundedBorderTextFieldStyle()).frame(width: 60)
                 }
             }
@@ -64,22 +56,18 @@ struct PolynomialControlsView: View {
             Divider().padding(.vertical, 4)
 
             // Blue Channel
-            Group {
+            VStack(alignment: .leading) {
                 Text("Blue Channel").font(.subheadline)
                 HStack {
                     Text("Linear (Y):")
-                    Slider(value: $viewModel.polyBlueLinear, in: 0.0...2.0, step: 0.01) { editing in
-                        if !editing { viewModel.triggerImageProcessing() }
-                    }
-                    TextField("", value: $viewModel.polyBlueLinear, formatter: formatter)
+                    Slider(value: $viewModel.currentAdjustments.polyBlueLinear, in: 0.0...2.0, step: 0.01)
+                    TextField("", value: $viewModel.currentAdjustments.polyBlueLinear, formatter: formatter)
                         .textFieldStyle(RoundedBorderTextFieldStyle()).frame(width: 60)
                 }
                 HStack {
                     Text("Quadratic (Z):")
-                    Slider(value: $viewModel.polyBlueQuadratic, in: -1.0...1.0, step: 0.01) { editing in
-                        if !editing { viewModel.triggerImageProcessing() }
-                    }
-                    TextField("", value: $viewModel.polyBlueQuadratic, formatter: formatter)
+                    Slider(value: $viewModel.currentAdjustments.polyBlueQuadratic, in: -1.0...1.0, step: 0.01)
+                    TextField("", value: $viewModel.currentAdjustments.polyBlueQuadratic, formatter: formatter)
                         .textFieldStyle( RoundedBorderTextFieldStyle()).frame(width: 60)
                 }
             }

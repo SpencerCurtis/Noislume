@@ -1,0 +1,684 @@
+Command line invocation:
+    /Applications/Xcode.app/Contents/Developer/usr/bin/xcodebuild clean build -scheme Noislume -destination generic/platform=iOS
+
+ComputePackagePrebuildTargetDependencyGraph
+
+CreateBuildRequest
+
+SendProjectDescription
+
+CreateBuildOperation
+
+** CLEAN SUCCEEDED **
+
+ComputePackagePrebuildTargetDependencyGraph
+
+Prepare packages
+
+CreateBuildRequest
+
+SendProjectDescription
+
+CreateBuildOperation
+
+ComputeTargetDependencyGraph
+note: Building targets in dependency order
+note: Target dependency graph (1 target)
+    Target 'Noislume' in project 'Noislume' (no dependencies)
+
+GatherProvisioningInputs
+
+CreateBuildDescription
+
+ExecuteExternalTool /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang -v -E -dM -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS18.4.sdk -x c -c /dev/null
+
+ExecuteExternalTool /Applications/Xcode.app/Contents/Developer/usr/bin/actool --print-asset-tag-combinations --output-format xml1 /Users/spencercurtis/Documents/Noislume/Noislume/Assets.xcassets
+
+ExecuteExternalTool /Applications/Xcode.app/Contents/Developer/usr/bin/actool --version --output-format xml1
+
+ExecuteExternalTool /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc --version
+
+ExecuteExternalTool /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/ld -version_details
+
+Build description signature: 81c6e169c902fe2c00577be36c47cd48
+Build description path: /Users/spencercurtis/Library/Developer/Xcode/DerivedData/Noislume-fvkzpfnpeooukldyiycenalsieyk/Build/Intermediates.noindex/XCBuildData/81c6e169c902fe2c00577be36c47cd48.xcbuilddata
+ClangStatCache /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang-stat-cache /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS18.4.sdk /Users/spencercurtis/Library/Developer/Xcode/DerivedData/SDKStatCaches.noindex/iphoneos18.4-22E235-a09501eccf75f892bc376f81961b27ba.sdkstatcache
+    cd /Users/spencercurtis/Documents/Noislume/Noislume.xcodeproj
+    /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang-stat-cache /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS18.4.sdk -o /Users/spencercurtis/Library/Developer/Xcode/DerivedData/SDKStatCaches.noindex/iphoneos18.4-22E235-a09501eccf75f892bc376f81961b27ba.sdkstatcache
+
+CreateBuildDirectory /Users/spencercurtis/Library/Developer/Xcode/DerivedData/Noislume-fvkzpfnpeooukldyiycenalsieyk/Build/Products
+    cd /Users/spencercurtis/Documents/Noislume/Noislume.xcodeproj
+    builtin-create-build-directory /Users/spencercurtis/Library/Developer/Xcode/DerivedData/Noislume-fvkzpfnpeooukldyiycenalsieyk/Build/Products
+
+CreateBuildDirectory /Users/spencercurtis/Library/Developer/Xcode/DerivedData/Noislume-fvkzpfnpeooukldyiycenalsieyk/Build/Intermediates.noindex
+    cd /Users/spencercurtis/Documents/Noislume/Noislume.xcodeproj
+    builtin-create-build-directory /Users/spencercurtis/Library/Developer/Xcode/DerivedData/Noislume-fvkzpfnpeooukldyiycenalsieyk/Build/Intermediates.noindex
+
+CreateBuildDirectory /Users/spencercurtis/Library/Developer/Xcode/DerivedData/Noislume-fvkzpfnpeooukldyiycenalsieyk/Build/Products/Debug-iphoneos
+    cd /Users/spencercurtis/Documents/Noislume/Noislume.xcodeproj
+    builtin-create-build-directory /Users/spencercurtis/Library/Developer/Xcode/DerivedData/Noislume-fvkzpfnpeooukldyiycenalsieyk/Build/Products/Debug-iphoneos
+
+CreateBuildDirectory /Users/spencercurtis/Library/Developer/Xcode/DerivedData/Noislume-fvkzpfnpeooukldyiycenalsieyk/Build/Intermediates.noindex/EagerLinkingTBDs/Debug-iphoneos
+    cd /Users/spencercurtis/Documents/Noislume/Noislume.xcodeproj
+    builtin-create-build-directory /Users/spencercurtis/Library/Developer/Xcode/DerivedData/Noislume-fvkzpfnpeooukldyiycenalsieyk/Build/Intermediates.noindex/EagerLinkingTBDs/Debug-iphoneos
+
+WriteAuxiliaryFile /Users/spencercurtis/Library/Developer/Xcode/DerivedData/Noislume-fvkzpfnpeooukldyiycenalsieyk/Build/Intermediates.noindex/Noislume.build/Debug-iphoneos/Noislume-2598fa8ef892c1d5bd5ad26405e5477e-VFS-iphoneos/all-product-headers.yaml
+    cd /Users/spencercurtis/Documents/Noislume/Noislume.xcodeproj
+    write-file /Users/spencercurtis/Library/Developer/Xcode/DerivedData/Noislume-fvkzpfnpeooukldyiycenalsieyk/Build/Intermediates.noindex/Noislume.build/Debug-iphoneos/Noislume-2598fa8ef892c1d5bd5ad26405e5477e-VFS-iphoneos/all-product-headers.yaml
+
+WriteAuxiliaryFile /Users/spencercurtis/Library/Developer/Xcode/DerivedData/Noislume-fvkzpfnpeooukldyiycenalsieyk/Build/Intermediates.noindex/Noislume.build/Debug-iphoneos/Noislume.build/empty-Noislume.plist (in target 'Noislume' from project 'Noislume')
+    cd /Users/spencercurtis/Documents/Noislume
+    write-file /Users/spencercurtis/Library/Developer/Xcode/DerivedData/Noislume-fvkzpfnpeooukldyiycenalsieyk/Build/Intermediates.noindex/Noislume.build/Debug-iphoneos/Noislume.build/empty-Noislume.plist
+
+WriteAuxiliaryFile /Users/spencercurtis/Library/Developer/Xcode/DerivedData/Noislume-fvkzpfnpeooukldyiycenalsieyk/Build/Intermediates.noindex/Noislume.build/Debug-iphoneos/Noislume.build/Noislume.hmap (in target 'Noislume' from project 'Noislume')
+    cd /Users/spencercurtis/Documents/Noislume
+    write-file /Users/spencercurtis/Library/Developer/Xcode/DerivedData/Noislume-fvkzpfnpeooukldyiycenalsieyk/Build/Intermediates.noindex/Noislume.build/Debug-iphoneos/Noislume.build/Noislume.hmap
+
+WriteAuxiliaryFile /Users/spencercurtis/Library/Developer/Xcode/DerivedData/Noislume-fvkzpfnpeooukldyiycenalsieyk/Build/Intermediates.noindex/Noislume.build/Debug-iphoneos/Noislume.build/Noislume.DependencyStaticMetadataFileList (in target 'Noislume' from project 'Noislume')
+    cd /Users/spencercurtis/Documents/Noislume
+    write-file /Users/spencercurtis/Library/Developer/Xcode/DerivedData/Noislume-fvkzpfnpeooukldyiycenalsieyk/Build/Intermediates.noindex/Noislume.build/Debug-iphoneos/Noislume.build/Noislume.DependencyStaticMetadataFileList
+
+WriteAuxiliaryFile /Users/spencercurtis/Library/Developer/Xcode/DerivedData/Noislume-fvkzpfnpeooukldyiycenalsieyk/Build/Intermediates.noindex/Noislume.build/Debug-iphoneos/Noislume.build/Objects-normal/arm64/Noislume_const_extract_protocols.json (in target 'Noislume' from project 'Noislume')
+    cd /Users/spencercurtis/Documents/Noislume
+    write-file /Users/spencercurtis/Library/Developer/Xcode/DerivedData/Noislume-fvkzpfnpeooukldyiycenalsieyk/Build/Intermediates.noindex/Noislume.build/Debug-iphoneos/Noislume.build/Objects-normal/arm64/Noislume_const_extract_protocols.json
+
+WriteAuxiliaryFile /Users/spencercurtis/Library/Developer/Xcode/DerivedData/Noislume-fvkzpfnpeooukldyiycenalsieyk/Build/Intermediates.noindex/Noislume.build/Debug-iphoneos/Noislume.build/Objects-normal/arm64/Noislume.SwiftConstValuesFileList (in target 'Noislume' from project 'Noislume')
+    cd /Users/spencercurtis/Documents/Noislume
+    write-file /Users/spencercurtis/Library/Developer/Xcode/DerivedData/Noislume-fvkzpfnpeooukldyiycenalsieyk/Build/Intermediates.noindex/Noislume.build/Debug-iphoneos/Noislume.build/Objects-normal/arm64/Noislume.SwiftConstValuesFileList
+
+WriteAuxiliaryFile /Users/spencercurtis/Library/Developer/Xcode/DerivedData/Noislume-fvkzpfnpeooukldyiycenalsieyk/Build/Intermediates.noindex/Noislume.build/Debug-iphoneos/Noislume.build/Objects-normal/arm64/Noislume.LinkFileList (in target 'Noislume' from project 'Noislume')
+    cd /Users/spencercurtis/Documents/Noislume
+    write-file /Users/spencercurtis/Library/Developer/Xcode/DerivedData/Noislume-fvkzpfnpeooukldyiycenalsieyk/Build/Intermediates.noindex/Noislume.build/Debug-iphoneos/Noislume.build/Objects-normal/arm64/Noislume.LinkFileList
+
+WriteAuxiliaryFile /Users/spencercurtis/Library/Developer/Xcode/DerivedData/Noislume-fvkzpfnpeooukldyiycenalsieyk/Build/Intermediates.noindex/Noislume.build/Debug-iphoneos/Noislume.build/Objects-normal/arm64/Noislume-OutputFileMap.json (in target 'Noislume' from project 'Noislume')
+    cd /Users/spencercurtis/Documents/Noislume
+    write-file /Users/spencercurtis/Library/Developer/Xcode/DerivedData/Noislume-fvkzpfnpeooukldyiycenalsieyk/Build/Intermediates.noindex/Noislume.build/Debug-iphoneos/Noislume.build/Objects-normal/arm64/Noislume-OutputFileMap.json
+
+WriteAuxiliaryFile /Users/spencercurtis/Library/Developer/Xcode/DerivedData/Noislume-fvkzpfnpeooukldyiycenalsieyk/Build/Intermediates.noindex/Noislume.build/Debug-iphoneos/Noislume.build/Objects-normal/arm64/Noislume.SwiftFileList (in target 'Noislume' from project 'Noislume')
+    cd /Users/spencercurtis/Documents/Noislume
+    write-file /Users/spencercurtis/Library/Developer/Xcode/DerivedData/Noislume-fvkzpfnpeooukldyiycenalsieyk/Build/Intermediates.noindex/Noislume.build/Debug-iphoneos/Noislume.build/Objects-normal/arm64/Noislume.SwiftFileList
+
+WriteAuxiliaryFile /Users/spencercurtis/Library/Developer/Xcode/DerivedData/Noislume-fvkzpfnpeooukldyiycenalsieyk/Build/Intermediates.noindex/Noislume.build/Debug-iphoneos/Noislume.build/Noislume.DependencyMetadataFileList (in target 'Noislume' from project 'Noislume')
+    cd /Users/spencercurtis/Documents/Noislume
+    write-file /Users/spencercurtis/Library/Developer/Xcode/DerivedData/Noislume-fvkzpfnpeooukldyiycenalsieyk/Build/Intermediates.noindex/Noislume.build/Debug-iphoneos/Noislume.build/Noislume.DependencyMetadataFileList
+
+WriteAuxiliaryFile /Users/spencercurtis/Library/Developer/Xcode/DerivedData/Noislume-fvkzpfnpeooukldyiycenalsieyk/Build/Intermediates.noindex/Noislume.build/Debug-iphoneos/Noislume.build/Noislume-project-headers.hmap (in target 'Noislume' from project 'Noislume')
+    cd /Users/spencercurtis/Documents/Noislume
+    write-file /Users/spencercurtis/Library/Developer/Xcode/DerivedData/Noislume-fvkzpfnpeooukldyiycenalsieyk/Build/Intermediates.noindex/Noislume.build/Debug-iphoneos/Noislume.build/Noislume-project-headers.hmap
+
+WriteAuxiliaryFile /Users/spencercurtis/Library/Developer/Xcode/DerivedData/Noislume-fvkzpfnpeooukldyiycenalsieyk/Build/Intermediates.noindex/Noislume.build/Debug-iphoneos/Noislume.build/Noislume-own-target-headers.hmap (in target 'Noislume' from project 'Noislume')
+    cd /Users/spencercurtis/Documents/Noislume
+    write-file /Users/spencercurtis/Library/Developer/Xcode/DerivedData/Noislume-fvkzpfnpeooukldyiycenalsieyk/Build/Intermediates.noindex/Noislume.build/Debug-iphoneos/Noislume.build/Noislume-own-target-headers.hmap
+
+WriteAuxiliaryFile /Users/spencercurtis/Library/Developer/Xcode/DerivedData/Noislume-fvkzpfnpeooukldyiycenalsieyk/Build/Intermediates.noindex/Noislume.build/Debug-iphoneos/Noislume.build/Noislume-generated-files.hmap (in target 'Noislume' from project 'Noislume')
+    cd /Users/spencercurtis/Documents/Noislume
+    write-file /Users/spencercurtis/Library/Developer/Xcode/DerivedData/Noislume-fvkzpfnpeooukldyiycenalsieyk/Build/Intermediates.noindex/Noislume.build/Debug-iphoneos/Noislume.build/Noislume-generated-files.hmap
+
+WriteAuxiliaryFile /Users/spencercurtis/Library/Developer/Xcode/DerivedData/Noislume-fvkzpfnpeooukldyiycenalsieyk/Build/Intermediates.noindex/Noislume.build/Debug-iphoneos/Noislume.build/Noislume-all-target-headers.hmap (in target 'Noislume' from project 'Noislume')
+    cd /Users/spencercurtis/Documents/Noislume
+    write-file /Users/spencercurtis/Library/Developer/Xcode/DerivedData/Noislume-fvkzpfnpeooukldyiycenalsieyk/Build/Intermediates.noindex/Noislume.build/Debug-iphoneos/Noislume.build/Noislume-all-target-headers.hmap
+
+WriteAuxiliaryFile /Users/spencercurtis/Library/Developer/Xcode/DerivedData/Noislume-fvkzpfnpeooukldyiycenalsieyk/Build/Intermediates.noindex/Noislume.build/Debug-iphoneos/Noislume.build/Noislume-all-non-framework-target-headers.hmap (in target 'Noislume' from project 'Noislume')
+    cd /Users/spencercurtis/Documents/Noislume
+    write-file /Users/spencercurtis/Library/Developer/Xcode/DerivedData/Noislume-fvkzpfnpeooukldyiycenalsieyk/Build/Intermediates.noindex/Noislume.build/Debug-iphoneos/Noislume.build/Noislume-all-non-framework-target-headers.hmap
+
+WriteAuxiliaryFile /Users/spencercurtis/Library/Developer/Xcode/DerivedData/Noislume-fvkzpfnpeooukldyiycenalsieyk/Build/Intermediates.noindex/Noislume.build/Debug-iphoneos/Noislume.build/Noislume-DebugDylibPath-normal-arm64.txt (in target 'Noislume' from project 'Noislume')
+    cd /Users/spencercurtis/Documents/Noislume
+    write-file /Users/spencercurtis/Library/Developer/Xcode/DerivedData/Noislume-fvkzpfnpeooukldyiycenalsieyk/Build/Intermediates.noindex/Noislume.build/Debug-iphoneos/Noislume.build/Noislume-DebugDylibPath-normal-arm64.txt
+
+WriteAuxiliaryFile /Users/spencercurtis/Library/Developer/Xcode/DerivedData/Noislume-fvkzpfnpeooukldyiycenalsieyk/Build/Intermediates.noindex/Noislume.build/Debug-iphoneos/Noislume.build/Noislume-DebugDylibInstallName-normal-arm64.txt (in target 'Noislume' from project 'Noislume')
+    cd /Users/spencercurtis/Documents/Noislume
+    write-file /Users/spencercurtis/Library/Developer/Xcode/DerivedData/Noislume-fvkzpfnpeooukldyiycenalsieyk/Build/Intermediates.noindex/Noislume.build/Debug-iphoneos/Noislume.build/Noislume-DebugDylibInstallName-normal-arm64.txt
+
+MkDir /Users/spencercurtis/Library/Developer/Xcode/DerivedData/Noislume-fvkzpfnpeooukldyiycenalsieyk/Build/Products/Debug-iphoneos/Noislume.app (in target 'Noislume' from project 'Noislume')
+    cd /Users/spencercurtis/Documents/Noislume
+    /bin/mkdir -p /Users/spencercurtis/Library/Developer/Xcode/DerivedData/Noislume-fvkzpfnpeooukldyiycenalsieyk/Build/Products/Debug-iphoneos/Noislume.app
+
+WriteAuxiliaryFile /Users/spencercurtis/Library/Developer/Xcode/DerivedData/Noislume-fvkzpfnpeooukldyiycenalsieyk/Build/Intermediates.noindex/Noislume.build/Debug-iphoneos/Noislume.build/DerivedSources/Entitlements.plist (in target 'Noislume' from project 'Noislume')
+    cd /Users/spencercurtis/Documents/Noislume
+    write-file /Users/spencercurtis/Library/Developer/Xcode/DerivedData/Noislume-fvkzpfnpeooukldyiycenalsieyk/Build/Intermediates.noindex/Noislume.build/Debug-iphoneos/Noislume.build/DerivedSources/Entitlements.plist
+
+ProcessProductPackaging /Users/spencercurtis/Library/Developer/Xcode/UserData/Provisioning\ Profiles/6935b6d1-6284-4d9d-be9a-de4f493c251d.mobileprovision /Users/spencercurtis/Library/Developer/Xcode/DerivedData/Noislume-fvkzpfnpeooukldyiycenalsieyk/Build/Products/Debug-iphoneos/Noislume.app/embedded.mobileprovision (in target 'Noislume' from project 'Noislume')
+    cd /Users/spencercurtis/Documents/Noislume
+    builtin-productPackagingUtility /Users/spencercurtis/Library/Developer/Xcode/UserData/Provisioning\ Profiles/6935b6d1-6284-4d9d-be9a-de4f493c251d.mobileprovision -o /Users/spencercurtis/Library/Developer/Xcode/DerivedData/Noislume-fvkzpfnpeooukldyiycenalsieyk/Build/Products/Debug-iphoneos/Noislume.app/embedded.mobileprovision
+
+ProcessProductPackaging /Users/spencercurtis/Documents/Noislume/Noislume/Noislume.entitlements /Users/spencercurtis/Library/Developer/Xcode/DerivedData/Noislume-fvkzpfnpeooukldyiycenalsieyk/Build/Intermediates.noindex/Noislume.build/Debug-iphoneos/Noislume.build/Noislume.app.xcent (in target 'Noislume' from project 'Noislume')
+    cd /Users/spencercurtis/Documents/Noislume
+    
+    Entitlements:
+    
+    {
+    "application-identifier" = "28B8X634EX.com.SpencerCurtis.Noislume";
+    "com.apple.developer.team-identifier" = 28B8X634EX;
+    "get-task-allow" = 1;
+}
+    
+    builtin-productPackagingUtility /Users/spencercurtis/Documents/Noislume/Noislume/Noislume.entitlements -entitlements -format xml -o /Users/spencercurtis/Library/Developer/Xcode/DerivedData/Noislume-fvkzpfnpeooukldyiycenalsieyk/Build/Intermediates.noindex/Noislume.build/Debug-iphoneos/Noislume.build/Noislume.app.xcent
+
+ProcessProductPackagingDER /Users/spencercurtis/Library/Developer/Xcode/DerivedData/Noislume-fvkzpfnpeooukldyiycenalsieyk/Build/Intermediates.noindex/Noislume.build/Debug-iphoneos/Noislume.build/Noislume.app.xcent /Users/spencercurtis/Library/Developer/Xcode/DerivedData/Noislume-fvkzpfnpeooukldyiycenalsieyk/Build/Intermediates.noindex/Noislume.build/Debug-iphoneos/Noislume.build/Noislume.app.xcent.der (in target 'Noislume' from project 'Noislume')
+    cd /Users/spencercurtis/Documents/Noislume
+    /usr/bin/derq query -f xml -i /Users/spencercurtis/Library/Developer/Xcode/DerivedData/Noislume-fvkzpfnpeooukldyiycenalsieyk/Build/Intermediates.noindex/Noislume.build/Debug-iphoneos/Noislume.build/Noislume.app.xcent -o /Users/spencercurtis/Library/Developer/Xcode/DerivedData/Noislume-fvkzpfnpeooukldyiycenalsieyk/Build/Intermediates.noindex/Noislume.build/Debug-iphoneos/Noislume.build/Noislume.app.xcent.der --raw
+
+Ld /Users/spencercurtis/Library/Developer/Xcode/DerivedData/Noislume-fvkzpfnpeooukldyiycenalsieyk/Build/Products/Debug-iphoneos/Noislume.app/__preview.dylib normal (in target 'Noislume' from project 'Noislume')
+    cd /Users/spencercurtis/Documents/Noislume
+    /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang -Xlinker -reproducible -target arm64-apple-ios18.4 -dynamiclib -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS18.4.sdk -O0 -L/Users/spencercurtis/Library/Developer/Xcode/DerivedData/Noislume-fvkzpfnpeooukldyiycenalsieyk/Build/Products/Debug-iphoneos -F/Users/spencercurtis/Library/Developer/Xcode/DerivedData/Noislume-fvkzpfnpeooukldyiycenalsieyk/Build/Products/Debug-iphoneos -F/Users/spencercurtis/Documents/Noislume/Noislume/Frameworks -F/Users/spencercurtis/Documents/Noislume/Noislume/Frameworks -install_name @rpath/Noislume.debug.dylib -dead_strip -rdynamic -Xlinker -no_deduplicate -Xlinker -debug_variant -Xlinker -dependency_info -Xlinker /Users/spencercurtis/Library/Developer/Xcode/DerivedData/Noislume-fvkzpfnpeooukldyiycenalsieyk/Build/Intermediates.noindex/Noislume.build/Debug-iphoneos/Noislume.build/Objects-normal/arm64/Noislume_dependency_info.dat -Xlinker -no_adhoc_codesign -o /Users/spencercurtis/Library/Developer/Xcode/DerivedData/Noislume-fvkzpfnpeooukldyiycenalsieyk/Build/Products/Debug-iphoneos/Noislume.app/__preview.dylib
+
+GenerateAssetSymbols /Users/spencercurtis/Documents/Noislume/Noislume/Assets.xcassets (in target 'Noislume' from project 'Noislume')
+    cd /Users/spencercurtis/Documents/Noislume
+    /Applications/Xcode.app/Contents/Developer/usr/bin/actool /Users/spencercurtis/Documents/Noislume/Noislume/Assets.xcassets --compile /Users/spencercurtis/Library/Developer/Xcode/DerivedData/Noislume-fvkzpfnpeooukldyiycenalsieyk/Build/Products/Debug-iphoneos/Noislume.app --output-format human-readable-text --notices --warnings --export-dependency-info /Users/spencercurtis/Library/Developer/Xcode/DerivedData/Noislume-fvkzpfnpeooukldyiycenalsieyk/Build/Intermediates.noindex/Noislume.build/Debug-iphoneos/Noislume.build/assetcatalog_dependencies --output-partial-info-plist /Users/spencercurtis/Library/Developer/Xcode/DerivedData/Noislume-fvkzpfnpeooukldyiycenalsieyk/Build/Intermediates.noindex/Noislume.build/Debug-iphoneos/Noislume.build/assetcatalog_generated_info.plist --app-icon AppIcon --accent-color AccentColor --compress-pngs --enable-on-demand-resources YES --development-region en --target-device iphone --target-device ipad --minimum-deployment-target 18.4 --platform iphoneos --bundle-identifier com.SpencerCurtis.Noislume --generate-swift-asset-symbols /Users/spencercurtis/Library/Developer/Xcode/DerivedData/Noislume-fvkzpfnpeooukldyiycenalsieyk/Build/Intermediates.noindex/Noislume.build/Debug-iphoneos/Noislume.build/DerivedSources/GeneratedAssetSymbols.swift --generate-objc-asset-symbols /Users/spencercurtis/Library/Developer/Xcode/DerivedData/Noislume-fvkzpfnpeooukldyiycenalsieyk/Build/Intermediates.noindex/Noislume.build/Debug-iphoneos/Noislume.build/DerivedSources/GeneratedAssetSymbols.h --generate-asset-symbol-index /Users/spencercurtis/Library/Developer/Xcode/DerivedData/Noislume-fvkzpfnpeooukldyiycenalsieyk/Build/Intermediates.noindex/Noislume.build/Debug-iphoneos/Noislume.build/DerivedSources/GeneratedAssetSymbols-Index.plist
+/* com.apple.actool.compilation-results */
+/Users/spencercurtis/Library/Developer/Xcode/DerivedData/Noislume-fvkzpfnpeooukldyiycenalsieyk/Build/Intermediates.noindex/Noislume.build/Debug-iphoneos/Noislume.build/DerivedSources/GeneratedAssetSymbols-Index.plist
+/Users/spencercurtis/Library/Developer/Xcode/DerivedData/Noislume-fvkzpfnpeooukldyiycenalsieyk/Build/Intermediates.noindex/Noislume.build/Debug-iphoneos/Noislume.build/DerivedSources/GeneratedAssetSymbols.h
+/Users/spencercurtis/Library/Developer/Xcode/DerivedData/Noislume-fvkzpfnpeooukldyiycenalsieyk/Build/Intermediates.noindex/Noislume.build/Debug-iphoneos/Noislume.build/DerivedSources/GeneratedAssetSymbols.swift
+
+
+CpResource /Users/spencercurtis/Library/Developer/Xcode/DerivedData/Noislume-fvkzpfnpeooukldyiycenalsieyk/Build/Products/Debug-iphoneos/Noislume.app/FilterChecklist.md /Users/spencercurtis/Documents/Noislume/Noislume/Utils/FilterChecklist.md (in target 'Noislume' from project 'Noislume')
+    cd /Users/spencercurtis/Documents/Noislume
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -resolve-src-symlinks /Users/spencercurtis/Documents/Noislume/Noislume/Utils/FilterChecklist.md /Users/spencercurtis/Library/Developer/Xcode/DerivedData/Noislume-fvkzpfnpeooukldyiycenalsieyk/Build/Products/Debug-iphoneos/Noislume.app
+
+MkDir /Users/spencercurtis/Library/Developer/Xcode/DerivedData/Noislume-fvkzpfnpeooukldyiycenalsieyk/Build/Intermediates.noindex/Noislume.build/Debug-iphoneos/Noislume.build/assetcatalog_output/thinned (in target 'Noislume' from project 'Noislume')
+    cd /Users/spencercurtis/Documents/Noislume
+    /bin/mkdir -p /Users/spencercurtis/Library/Developer/Xcode/DerivedData/Noislume-fvkzpfnpeooukldyiycenalsieyk/Build/Intermediates.noindex/Noislume.build/Debug-iphoneos/Noislume.build/assetcatalog_output/thinned
+
+MkDir /Users/spencercurtis/Library/Developer/Xcode/DerivedData/Noislume-fvkzpfnpeooukldyiycenalsieyk/Build/Intermediates.noindex/Noislume.build/Debug-iphoneos/Noislume.build/assetcatalog_output/unthinned (in target 'Noislume' from project 'Noislume')
+    cd /Users/spencercurtis/Documents/Noislume
+    /bin/mkdir -p /Users/spencercurtis/Library/Developer/Xcode/DerivedData/Noislume-fvkzpfnpeooukldyiycenalsieyk/Build/Intermediates.noindex/Noislume.build/Debug-iphoneos/Noislume.build/assetcatalog_output/unthinned
+
+CompileAssetCatalogVariant thinned /Users/spencercurtis/Library/Developer/Xcode/DerivedData/Noislume-fvkzpfnpeooukldyiycenalsieyk/Build/Products/Debug-iphoneos/Noislume.app /Users/spencercurtis/Documents/Noislume/Noislume/Assets.xcassets (in target 'Noislume' from project 'Noislume')
+    cd /Users/spencercurtis/Documents/Noislume
+    /Applications/Xcode.app/Contents/Developer/usr/bin/actool /Users/spencercurtis/Documents/Noislume/Noislume/Assets.xcassets --compile /Users/spencercurtis/Library/Developer/Xcode/DerivedData/Noislume-fvkzpfnpeooukldyiycenalsieyk/Build/Intermediates.noindex/Noislume.build/Debug-iphoneos/Noislume.build/assetcatalog_output/thinned --output-format human-readable-text --notices --warnings --export-dependency-info /Users/spencercurtis/Library/Developer/Xcode/DerivedData/Noislume-fvkzpfnpeooukldyiycenalsieyk/Build/Intermediates.noindex/Noislume.build/Debug-iphoneos/Noislume.build/assetcatalog_dependencies_thinned --output-partial-info-plist /Users/spencercurtis/Library/Developer/Xcode/DerivedData/Noislume-fvkzpfnpeooukldyiycenalsieyk/Build/Intermediates.noindex/Noislume.build/Debug-iphoneos/Noislume.build/assetcatalog_generated_info.plist_thinned --app-icon AppIcon --accent-color AccentColor --compress-pngs --enable-on-demand-resources YES --development-region en --target-device iphone --target-device ipad --minimum-deployment-target 18.4 --platform iphoneos
+/* com.apple.actool.compilation-results */
+/Users/spencercurtis/Library/Developer/Xcode/DerivedData/Noislume-fvkzpfnpeooukldyiycenalsieyk/Build/Intermediates.noindex/Noislume.build/Debug-iphoneos/Noislume.build/assetcatalog_generated_info.plist_thinned
+
+
+SwiftDriver Noislume normal arm64 com.apple.xcode.tools.swift.compiler (in target 'Noislume' from project 'Noislume')
+    cd /Users/spencercurtis/Documents/Noislume
+    builtin-SwiftDriver -- /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc -module-name Noislume -Onone -enforce-exclusivity\=checked @/Users/spencercurtis/Library/Developer/Xcode/DerivedData/Noislume-fvkzpfnpeooukldyiycenalsieyk/Build/Intermediates.noindex/Noislume.build/Debug-iphoneos/Noislume.build/Objects-normal/arm64/Noislume.SwiftFileList -DDEBUG -enable-bare-slash-regex -enable-experimental-feature DebugDescriptionMacro -sdk /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS18.4.sdk -target arm64-apple-ios18.4 -g -module-cache-path /Users/spencercurtis/Library/Developer/Xcode/DerivedData/ModuleCache.noindex -Xfrontend -serialize-debugging-options -profile-coverage-mapping -profile-generate -enable-testing -index-store-path /Users/spencercurtis/Library/Developer/Xcode/DerivedData/Noislume-fvkzpfnpeooukldyiycenalsieyk/Index.noindex/DataStore -swift-version 5 -I /Users/spencercurtis/Library/Developer/Xcode/DerivedData/Noislume-fvkzpfnpeooukldyiycenalsieyk/Build/Products/Debug-iphoneos -F /Users/spencercurtis/Library/Developer/Xcode/DerivedData/Noislume-fvkzpfnpeooukldyiycenalsieyk/Build/Products/Debug-iphoneos -F /Users/spencercurtis/Documents/Noislume/Noislume/Frameworks -F /Users/spencercurtis/Documents/Noislume/Noislume/Frameworks -emit-localized-strings -emit-localized-strings-path /Users/spencercurtis/Library/Developer/Xcode/DerivedData/Noislume-fvkzpfnpeooukldyiycenalsieyk/Build/Intermediates.noindex/Noislume.build/Debug-iphoneos/Noislume.build/Objects-normal/arm64 -c -j10 -enable-batch-mode -incremental -Xcc -ivfsstatcache -Xcc /Users/spencercurtis/Library/Developer/Xcode/DerivedData/SDKStatCaches.noindex/iphoneos18.4-22E235-a09501eccf75f892bc376f81961b27ba.sdkstatcache -output-file-map /Users/spencercurtis/Library/Developer/Xcode/DerivedData/Noislume-fvkzpfnpeooukldyiycenalsieyk/Build/Intermediates.noindex/Noislume.build/Debug-iphoneos/Noislume.build/Objects-normal/arm64/Noislume-OutputFileMap.json -use-frontend-parseable-output -save-temps -no-color-diagnostics -serialize-diagnostics -emit-dependencies -emit-module -emit-module-path /Users/spencercurtis/Library/Developer/Xcode/DerivedData/Noislume-fvkzpfnpeooukldyiycenalsieyk/Build/Intermediates.noindex/Noislume.build/Debug-iphoneos/Noislume.build/Objects-normal/arm64/Noislume.swiftmodule -validate-clang-modules-once -clang-build-session-file /Users/spencercurtis/Library/Developer/Xcode/DerivedData/ModuleCache.noindex/Session.modulevalidation -Xcc -I/Users/spencercurtis/Library/Developer/Xcode/DerivedData/Noislume-fvkzpfnpeooukldyiycenalsieyk/Build/Intermediates.noindex/Noislume.build/Debug-iphoneos/Noislume.build/swift-overrides.hmap -emit-const-values -Xfrontend -const-gather-protocols-file -Xfrontend /Users/spencercurtis/Library/Developer/Xcode/DerivedData/Noislume-fvkzpfnpeooukldyiycenalsieyk/Build/Intermediates.noindex/Noislume.build/Debug-iphoneos/Noislume.build/Objects-normal/arm64/Noislume_const_extract_protocols.json -Xcc -iquote -Xcc /Users/spencercurtis/Library/Developer/Xcode/DerivedData/Noislume-fvkzpfnpeooukldyiycenalsieyk/Build/Intermediates.noindex/Noislume.build/Debug-iphoneos/Noislume.build/Noislume-generated-files.hmap -Xcc -I/Users/spencercurtis/Library/Developer/Xcode/DerivedData/Noislume-fvkzpfnpeooukldyiycenalsieyk/Build/Intermediates.noindex/Noislume.build/Debug-iphoneos/Noislume.build/Noislume-own-target-headers.hmap -Xcc -I/Users/spencercurtis/Library/Developer/Xcode/DerivedData/Noislume-fvkzpfnpeooukldyiycenalsieyk/Build/Intermediates.noindex/Noislume.build/Debug-iphoneos/Noislume.build/Noislume-all-target-headers.hmap -Xcc -iquote -Xcc /Users/spencercurtis/Library/Developer/Xcode/DerivedData/Noislume-fvkzpfnpeooukldyiycenalsieyk/Build/Intermediates.noindex/Noislume.build/Debug-iphoneos/Noislume.build/Noislume-project-headers.hmap -Xcc -I/Users/spencercurtis/Library/Developer/Xcode/DerivedData/Noislume-fvkzpfnpeooukldyiycenalsieyk/Build/Products/Debug-iphoneos/include -Xcc -I/Users/spencercurtis/Library/Developer/Xcode/DerivedData/Noislume-fvkzpfnpeooukldyiycenalsieyk/Build/Intermediates.noindex/Noislume.build/Debug-iphoneos/Noislume.build/DerivedSources-normal/arm64 -Xcc -I/Users/spencercurtis/Library/Developer/Xcode/DerivedData/Noislume-fvkzpfnpeooukldyiycenalsieyk/Build/Intermediates.noindex/Noislume.build/Debug-iphoneos/Noislume.build/DerivedSources/arm64 -Xcc -I/Users/spencercurtis/Library/Developer/Xcode/DerivedData/Noislume-fvkzpfnpeooukldyiycenalsieyk/Build/Intermediates.noindex/Noislume.build/Debug-iphoneos/Noislume.build/DerivedSources -Xcc -DDEBUG\=1 -emit-objc-header -emit-objc-header-path /Users/spencercurtis/Library/Developer/Xcode/DerivedData/Noislume-fvkzpfnpeooukldyiycenalsieyk/Build/Intermediates.noindex/Noislume.build/Debug-iphoneos/Noislume.build/Objects-normal/arm64/Noislume-Swift.h -import-objc-header /Users/spencercurtis/Documents/Noislume/Noislume/Noislume-Bridging-Header.h -pch-output-dir /Users/spencercurtis/Library/Developer/Xcode/DerivedData/Noislume-fvkzpfnpeooukldyiycenalsieyk/Build/Intermediates.noindex/PrecompiledHeaders -working-directory /Users/spencercurtis/Documents/Noislume -experimental-emit-module-separately -disable-cmo
+
+SwiftGeneratePch normal arm64 Compiling\ bridging\ header (in target 'Noislume' from project 'Noislume')
+
+PrecompileSwiftBridgingHeader normal arm64 (in target 'Noislume' from project 'Noislume')
+    cd /Users/spencercurtis/Documents/Noislume
+    
+
+SwiftDriverJobDiscovery normal arm64 Compiling bridging header (in target 'Noislume' from project 'Noislume')
+
+SwiftCompile normal arm64 Compiling\ AdjustmentsSidebar.swift,\ ColorCastAndHueRefinementFilter.swift,\ V1EditingControls.swift,\ PolynomialControlsView.swift,\ InversionViewModel.swift,\ CornerHandles.swift,\ PositiveColorGradeControlsView.swift /Users/spencercurtis/Documents/Noislume/Noislume/Views/Components/AdjustmentsSidebar.swift /Users/spencercurtis/Documents/Noislume/Noislume/Models/Filters/ColorCastAndHueRefinementFilter.swift /Users/spencercurtis/Documents/Noislume/Noislume/Views/Components/V1EditingControls.swift /Users/spencercurtis/Documents/Noislume/Noislume/Views/AdjustmentControls/PolynomialControlsView.swift /Users/spencercurtis/Documents/Noislume/Noislume/ViewModels/InversionViewModel.swift /Users/spencercurtis/Documents/Noislume/Noislume/Views/CornerHandles.swift /Users/spencercurtis/Documents/Noislume/Noislume/Views/AdjustmentControls/PositiveColorGradeControlsView.swift (in target 'Noislume' from project 'Noislume')
+SwiftCompile normal arm64 /Users/spencercurtis/Documents/Noislume/Noislume/Views/Components/AdjustmentsSidebar.swift (in target 'Noislume' from project 'Noislume')
+    cd /Users/spencercurtis/Documents/Noislume
+    
+
+SwiftCompile normal arm64 /Users/spencercurtis/Documents/Noislume/Noislume/Models/Filters/ColorCastAndHueRefinementFilter.swift (in target 'Noislume' from project 'Noislume')
+    cd /Users/spencercurtis/Documents/Noislume
+    
+
+SwiftCompile normal arm64 /Users/spencercurtis/Documents/Noislume/Noislume/Views/Components/V1EditingControls.swift (in target 'Noislume' from project 'Noislume')
+    cd /Users/spencercurtis/Documents/Noislume
+    
+
+SwiftCompile normal arm64 /Users/spencercurtis/Documents/Noislume/Noislume/Views/AdjustmentControls/PolynomialControlsView.swift (in target 'Noislume' from project 'Noislume')
+    cd /Users/spencercurtis/Documents/Noislume
+    
+
+SwiftCompile normal arm64 /Users/spencercurtis/Documents/Noislume/Noislume/ViewModels/InversionViewModel.swift (in target 'Noislume' from project 'Noislume')
+    cd /Users/spencercurtis/Documents/Noislume
+    
+
+SwiftCompile normal arm64 /Users/spencercurtis/Documents/Noislume/Noislume/Views/CornerHandles.swift (in target 'Noislume' from project 'Noislume')
+    cd /Users/spencercurtis/Documents/Noislume
+    
+
+SwiftCompile normal arm64 /Users/spencercurtis/Documents/Noislume/Noislume/Views/AdjustmentControls/PositiveColorGradeControlsView.swift (in target 'Noislume' from project 'Noislume')
+    cd /Users/spencercurtis/Documents/Noislume
+    
+
+SwiftEmitModule normal arm64 Emitting\ module\ for\ Noislume (in target 'Noislume' from project 'Noislume')
+
+EmitSwiftModule normal arm64 (in target 'Noislume' from project 'Noislume')
+    cd /Users/spencercurtis/Documents/Noislume
+    
+
+SwiftCompile normal arm64 Compiling\ AppCommands.swift,\ DarkButtonStyle.swift,\ EffectsSection.swift,\ ShortcutRow.swift,\ ShortcutRecorder.swift,\ ColorCastRefinementControlsView.swift,\ CoreImageProcessor.swift /Users/spencercurtis/Documents/Noislume/Noislume/Commands/AppCommands.swift /Users/spencercurtis/Documents/Noislume/Noislume/Views/DarkButtonStyle.swift /Users/spencercurtis/Documents/Noislume/Noislume/Views/Components/EffectsSection.swift /Users/spencercurtis/Documents/Noislume/Noislume/Views/ShortcutRow.swift /Users/spencercurtis/Documents/Noislume/Noislume/Views/Components/ShortcutRecorder.swift /Users/spencercurtis/Documents/Noislume/Noislume/Views/AdjustmentControls/ColorCastRefinementControlsView.swift /Users/spencercurtis/Documents/Noislume/Noislume/Utils/CoreImageProcessor.swift (in target 'Noislume' from project 'Noislume')
+
+SwiftCompile normal arm64 /Users/spencercurtis/Documents/Noislume/Noislume/Commands/AppCommands.swift (in target 'Noislume' from project 'Noislume')
+    cd /Users/spencercurtis/Documents/Noislume
+    
+
+SwiftCompile normal arm64 /Users/spencercurtis/Documents/Noislume/Noislume/Views/DarkButtonStyle.swift (in target 'Noislume' from project 'Noislume')
+    cd /Users/spencercurtis/Documents/Noislume
+    
+
+SwiftCompile normal arm64 /Users/spencercurtis/Documents/Noislume/Noislume/Views/Components/EffectsSection.swift (in target 'Noislume' from project 'Noislume')
+    cd /Users/spencercurtis/Documents/Noislume
+    
+
+SwiftCompile normal arm64 /Users/spencercurtis/Documents/Noislume/Noislume/Views/ShortcutRow.swift (in target 'Noislume' from project 'Noislume')
+    cd /Users/spencercurtis/Documents/Noislume
+    
+
+SwiftCompile normal arm64 /Users/spencercurtis/Documents/Noislume/Noislume/Views/Components/ShortcutRecorder.swift (in target 'Noislume' from project 'Noislume')
+    cd /Users/spencercurtis/Documents/Noislume
+    
+
+SwiftCompile normal arm64 /Users/spencercurtis/Documents/Noislume/Noislume/Views/AdjustmentControls/ColorCastRefinementControlsView.swift (in target 'Noislume' from project 'Noislume')
+    cd /Users/spencercurtis/Documents/Noislume
+    
+
+SwiftCompile normal arm64 /Users/spencercurtis/Documents/Noislume/Noislume/Utils/CoreImageProcessor.swift (in target 'Noislume' from project 'Noislume')
+    cd /Users/spencercurtis/Documents/Noislume
+    
+/Users/spencercurtis/Documents/Noislume/Noislume/Utils/CoreImageProcessor.swift:217:17: warning: variable 'initialImage' was never mutated; consider changing to 'let' constant
+            var initialImage = workingInitialImage // Use the pre-processed image for this task.
+            ~~~ ^
+            let
+/Users/spencercurtis/Documents/Noislume/Noislume/Utils/CoreImageProcessor.swift:289:17: warning: variable 'imageToReturn' was never mutated; consider changing to 'let' constant
+            var imageToReturn = finalImage
+            ~~~ ^
+            let
+
+SwiftCompile normal arm64 Compiling\ ThumbnailCacheManager.swift,\ AppDelegate_iOS.swift,\ CroppingView+macOS.swift,\ AutoLevelsChannelNormalizationFilter.swift,\ ImageAdjustments.swift,\ FilmStripView.swift,\ GeneratedAssetSymbols.swift /Users/spencercurtis/Documents/Noislume/Noislume/Utils/ThumbnailCacheManager.swift /Users/spencercurtis/Documents/Noislume/Noislume/AppDelegate_iOS.swift /Users/spencercurtis/Documents/Noislume/Noislume/Views/CroppingView+macOS.swift /Users/spencercurtis/Documents/Noislume/Noislume/Models/Filters/AutoLevelsChannelNormalizationFilter.swift /Users/spencercurtis/Documents/Noislume/Noislume/Models/ImageAdjustments.swift /Users/spencercurtis/Documents/Noislume/Noislume/Views/FilmStripView.swift /Users/spencercurtis/Library/Developer/Xcode/DerivedData/Noislume-fvkzpfnpeooukldyiycenalsieyk/Build/Intermediates.noindex/Noislume.build/Debug-iphoneos/Noislume.build/DerivedSources/GeneratedAssetSymbols.swift (in target 'Noislume' from project 'Noislume')
+SwiftCompile normal arm64 /Users/spencercurtis/Documents/Noislume/Noislume/Utils/ThumbnailCacheManager.swift (in target 'Noislume' from project 'Noislume')
+    cd /Users/spencercurtis/Documents/Noislume
+    
+
+SwiftCompile normal arm64 /Users/spencercurtis/Documents/Noislume/Noislume/AppDelegate_iOS.swift (in target 'Noislume' from project 'Noislume')
+    cd /Users/spencercurtis/Documents/Noislume
+    
+/Users/spencercurtis/Documents/Noislume/Noislume/AppDelegate_iOS.swift:92:13: warning: initialization of immutable value 'window' was never used; consider replacing with assignment to '_' or removing it
+        let window = UIWindow(windowScene: windowScene)
+        ~~~~^~~~~~
+        _
+
+SwiftCompile normal arm64 /Users/spencercurtis/Documents/Noislume/Noislume/Views/CroppingView+macOS.swift (in target 'Noislume' from project 'Noislume')
+    cd /Users/spencercurtis/Documents/Noislume
+    
+
+SwiftCompile normal arm64 /Users/spencercurtis/Documents/Noislume/Noislume/Models/Filters/AutoLevelsChannelNormalizationFilter.swift (in target 'Noislume' from project 'Noislume')
+    cd /Users/spencercurtis/Documents/Noislume
+    
+
+SwiftCompile normal arm64 /Users/spencercurtis/Documents/Noislume/Noislume/Models/ImageAdjustments.swift (in target 'Noislume' from project 'Noislume')
+    cd /Users/spencercurtis/Documents/Noislume
+    
+
+SwiftCompile normal arm64 /Users/spencercurtis/Documents/Noislume/Noislume/Views/FilmStripView.swift (in target 'Noislume' from project 'Noislume')
+    cd /Users/spencercurtis/Documents/Noislume
+    
+
+SwiftCompile normal arm64 /Users/spencercurtis/Library/Developer/Xcode/DerivedData/Noislume-fvkzpfnpeooukldyiycenalsieyk/Build/Intermediates.noindex/Noislume.build/Debug-iphoneos/Noislume.build/DerivedSources/GeneratedAssetSymbols.swift (in target 'Noislume' from project 'Noislume')
+    cd /Users/spencercurtis/Documents/Noislume
+    
+
+SwiftCompile normal arm64 Compiling\ ThumbnailManager.swift,\ GeneralSettingsView.swift,\ HistogramData.swift,\ PersistenceManager.swift,\ AppDelegate_macOS.swift,\ NoislumeApp.swift,\ CollapsibleSection.swift,\ CustomApplication.swift /Users/spencercurtis/Documents/Noislume/Noislume/Utils/ThumbnailManager.swift /Users/spencercurtis/Documents/Noislume/Noislume/Views/GeneralSettingsView.swift /Users/spencercurtis/Documents/Noislume/Noislume/Models/HistogramData.swift /Users/spencercurtis/Documents/Noislume/Noislume/Utils/PersistenceManager.swift /Users/spencercurtis/Documents/Noislume/Noislume/AppDelegate_macOS.swift /Users/spencercurtis/Documents/Noislume/Noislume/NoislumeApp.swift /Users/spencercurtis/Documents/Noislume/Noislume/Views/Components/CollapsibleSection.swift /Users/spencercurtis/Documents/Noislume/Noislume/CustomApplication.swift (in target 'Noislume' from project 'Noislume')
+
+SwiftCompile normal arm64 /Users/spencercurtis/Documents/Noislume/Noislume/Utils/ThumbnailManager.swift (in target 'Noislume' from project 'Noislume')
+    cd /Users/spencercurtis/Documents/Noislume
+    
+
+SwiftCompile normal arm64 /Users/spencercurtis/Documents/Noislume/Noislume/Views/GeneralSettingsView.swift (in target 'Noislume' from project 'Noislume')
+    cd /Users/spencercurtis/Documents/Noislume
+    
+
+SwiftCompile normal arm64 /Users/spencercurtis/Documents/Noislume/Noislume/Models/HistogramData.swift (in target 'Noislume' from project 'Noislume')
+    cd /Users/spencercurtis/Documents/Noislume
+    
+
+SwiftCompile normal arm64 /Users/spencercurtis/Documents/Noislume/Noislume/Utils/PersistenceManager.swift (in target 'Noislume' from project 'Noislume')
+    cd /Users/spencercurtis/Documents/Noislume
+    
+
+SwiftCompile normal arm64 /Users/spencercurtis/Documents/Noislume/Noislume/AppDelegate_macOS.swift (in target 'Noislume' from project 'Noislume')
+    cd /Users/spencercurtis/Documents/Noislume
+    
+
+SwiftCompile normal arm64 /Users/spencercurtis/Documents/Noislume/Noislume/NoislumeApp.swift (in target 'Noislume' from project 'Noislume')
+    cd /Users/spencercurtis/Documents/Noislume
+    
+
+SwiftCompile normal arm64 /Users/spencercurtis/Documents/Noislume/Noislume/Views/Components/CollapsibleSection.swift (in target 'Noislume' from project 'Noislume')
+    cd /Users/spencercurtis/Documents/Noislume
+    
+
+SwiftCompile normal arm64 /Users/spencercurtis/Documents/Noislume/Noislume/CustomApplication.swift (in target 'Noislume' from project 'Noislume')
+    cd /Users/spencercurtis/Documents/Noislume
+    
+
+SwiftCompile normal arm64 Compiling\ ShortcutsSettingsView.swift,\ RawImageModel.swift,\ ModifierTranslator.swift,\ ImageState.swift,\ ContentView.swift,\ PositiveColorGradeFilter.swift,\ ExportError.swift,\ PlatformSpecificTypealiases.swift /Users/spencercurtis/Documents/Noislume/Noislume/Views/ShortcutsSettingsView.swift /Users/spencercurtis/Documents/Noislume/Noislume/Models/RawImageModel.swift /Users/spencercurtis/Documents/Noislume/Noislume/Utils/ModifierTranslator.swift /Users/spencercurtis/Documents/Noislume/Noislume/Models/ImageState.swift /Users/spencercurtis/Documents/Noislume/Noislume/ContentView.swift /Users/spencercurtis/Documents/Noislume/Noislume/Models/Filters/PositiveColorGradeFilter.swift /Users/spencercurtis/Documents/Noislume/Noislume/Models/ExportError.swift /Users/spencercurtis/Documents/Noislume/Noislume/Utils/PlatformSpecificTypealiases.swift (in target 'Noislume' from project 'Noislume')
+
+SwiftCompile normal arm64 /Users/spencercurtis/Documents/Noislume/Noislume/Views/ShortcutsSettingsView.swift (in target 'Noislume' from project 'Noislume')
+    cd /Users/spencercurtis/Documents/Noislume
+    
+
+SwiftCompile normal arm64 /Users/spencercurtis/Documents/Noislume/Noislume/Models/RawImageModel.swift (in target 'Noislume' from project 'Noislume')
+    cd /Users/spencercurtis/Documents/Noislume
+    
+
+SwiftCompile normal arm64 /Users/spencercurtis/Documents/Noislume/Noislume/Utils/ModifierTranslator.swift (in target 'Noislume' from project 'Noislume')
+    cd /Users/spencercurtis/Documents/Noislume
+    
+
+SwiftCompile normal arm64 /Users/spencercurtis/Documents/Noislume/Noislume/Models/ImageState.swift (in target 'Noislume' from project 'Noislume')
+    cd /Users/spencercurtis/Documents/Noislume
+    
+
+SwiftCompile normal arm64 /Users/spencercurtis/Documents/Noislume/Noislume/ContentView.swift (in target 'Noislume' from project 'Noislume')
+    cd /Users/spencercurtis/Documents/Noislume
+    
+
+SwiftCompile normal arm64 /Users/spencercurtis/Documents/Noislume/Noislume/Models/Filters/PositiveColorGradeFilter.swift (in target 'Noislume' from project 'Noislume')
+    cd /Users/spencercurtis/Documents/Noislume
+    
+
+SwiftCompile normal arm64 /Users/spencercurtis/Documents/Noislume/Noislume/Models/ExportError.swift (in target 'Noislume' from project 'Noislume')
+    cd /Users/spencercurtis/Documents/Noislume
+    
+
+SwiftCompile normal arm64 /Users/spencercurtis/Documents/Noislume/Noislume/Utils/PlatformSpecificTypealiases.swift (in target 'Noislume' from project 'Noislume')
+    cd /Users/spencercurtis/Documents/Noislume
+    
+
+SwiftCompile normal arm64 Compiling\ ShortcutTypes.swift,\ PositionedHandle.swift,\ EditingSidebar.swift,\ ProcessingVersion.swift,\ EdgeHandles.swift,\ BlackAndWhiteMixerControlsView.swift,\ AdjustmentSlider.swift,\ ExportDocument.swift /Users/spencercurtis/Documents/Noislume/Noislume/Models/ShortcutTypes.swift /Users/spencercurtis/Documents/Noislume/Noislume/Views/PositionedHandle.swift /Users/spencercurtis/Documents/Noislume/Noislume/Views/Components/EditingSidebar.swift /Users/spencercurtis/Documents/Noislume/Noislume/Models/ProcessingVersion.swift /Users/spencercurtis/Documents/Noislume/Noislume/Views/EdgeHandles.swift /Users/spencercurtis/Documents/Noislume/Noislume/Views/AdjustmentControls/BlackAndWhiteMixerControlsView.swift /Users/spencercurtis/Documents/Noislume/Noislume/Views/Components/AdjustmentSlider.swift /Users/spencercurtis/Documents/Noislume/Noislume/Models/ExportDocument.swift (in target 'Noislume' from project 'Noislume')
+
+SwiftCompile normal arm64 /Users/spencercurtis/Documents/Noislume/Noislume/Models/ShortcutTypes.swift (in target 'Noislume' from project 'Noislume')
+    cd /Users/spencercurtis/Documents/Noislume
+    
+
+SwiftCompile normal arm64 /Users/spencercurtis/Documents/Noislume/Noislume/Views/PositionedHandle.swift (in target 'Noislume' from project 'Noislume')
+    cd /Users/spencercurtis/Documents/Noislume
+    
+
+SwiftCompile normal arm64 /Users/spencercurtis/Documents/Noislume/Noislume/Views/Components/EditingSidebar.swift (in target 'Noislume' from project 'Noislume')
+    cd /Users/spencercurtis/Documents/Noislume
+    
+
+SwiftCompile normal arm64 /Users/spencercurtis/Documents/Noislume/Noislume/Models/ProcessingVersion.swift (in target 'Noislume' from project 'Noislume')
+    cd /Users/spencercurtis/Documents/Noislume
+    
+
+SwiftCompile normal arm64 /Users/spencercurtis/Documents/Noislume/Noislume/Views/EdgeHandles.swift (in target 'Noislume' from project 'Noislume')
+    cd /Users/spencercurtis/Documents/Noislume
+    
+
+SwiftCompile normal arm64 /Users/spencercurtis/Documents/Noislume/Noislume/Views/AdjustmentControls/BlackAndWhiteMixerControlsView.swift (in target 'Noislume' from project 'Noislume')
+    cd /Users/spencercurtis/Documents/Noislume
+    
+
+SwiftCompile normal arm64 /Users/spencercurtis/Documents/Noislume/Noislume/Views/Components/AdjustmentSlider.swift (in target 'Noislume' from project 'Noislume')
+    cd /Users/spencercurtis/Documents/Noislume
+    
+
+SwiftCompile normal arm64 /Users/spencercurtis/Documents/Noislume/Noislume/Models/ExportDocument.swift (in target 'Noislume' from project 'Noislume')
+    cd /Users/spencercurtis/Documents/Noislume
+    
+
+SwiftCompile normal arm64 Compiling\ ShortcutRecorderService.swift,\ ColorGradingFilters.swift,\ FilmBaseNeutralizationFilter.swift,\ CroppingSection.swift,\ CroppingView.swift,\ CIColor+Extensions.swift,\ ColorAdjustmentsSection.swift,\ ToneAndContrastFilters.swift /Users/spencercurtis/Documents/Noislume/Noislume/Utils/ShortcutRecorderService.swift /Users/spencercurtis/Documents/Noislume/Noislume/Models/Filters/ColorGradingFilters.swift /Users/spencercurtis/Documents/Noislume/Noislume/Models/Filters/FilmBaseNeutralizationFilter.swift /Users/spencercurtis/Documents/Noislume/Noislume/Views/Components/CroppingSection.swift /Users/spencercurtis/Documents/Noislume/Noislume/Views/CroppingView.swift /Users/spencercurtis/Documents/Noislume/Noislume/Utils/CIColor+Extensions.swift /Users/spencercurtis/Documents/Noislume/Noislume/Views/Components/ColorAdjustmentsSection.swift /Users/spencercurtis/Documents/Noislume/Noislume/Models/Filters/ToneAndContrastFilters.swift (in target 'Noislume' from project 'Noislume')
+
+SwiftCompile normal arm64 /Users/spencercurtis/Documents/Noislume/Noislume/Utils/ShortcutRecorderService.swift (in target 'Noislume' from project 'Noislume')
+    cd /Users/spencercurtis/Documents/Noislume
+    
+
+SwiftCompile normal arm64 /Users/spencercurtis/Documents/Noislume/Noislume/Models/Filters/ColorGradingFilters.swift (in target 'Noislume' from project 'Noislume')
+    cd /Users/spencercurtis/Documents/Noislume
+    
+
+SwiftCompile normal arm64 /Users/spencercurtis/Documents/Noislume/Noislume/Models/Filters/FilmBaseNeutralizationFilter.swift (in target 'Noislume' from project 'Noislume')
+    cd /Users/spencercurtis/Documents/Noislume
+    
+
+SwiftCompile normal arm64 /Users/spencercurtis/Documents/Noislume/Noislume/Views/Components/CroppingSection.swift (in target 'Noislume' from project 'Noislume')
+    cd /Users/spencercurtis/Documents/Noislume
+    
+
+SwiftCompile normal arm64 /Users/spencercurtis/Documents/Noislume/Noislume/Views/CroppingView.swift (in target 'Noislume' from project 'Noislume')
+    cd /Users/spencercurtis/Documents/Noislume
+    
+
+SwiftCompile normal arm64 /Users/spencercurtis/Documents/Noislume/Noislume/Utils/CIColor+Extensions.swift (in target 'Noislume' from project 'Noislume')
+    cd /Users/spencercurtis/Documents/Noislume
+    
+
+SwiftCompile normal arm64 /Users/spencercurtis/Documents/Noislume/Noislume/Views/Components/ColorAdjustmentsSection.swift (in target 'Noislume' from project 'Noislume')
+    cd /Users/spencercurtis/Documents/Noislume
+    
+
+SwiftCompile normal arm64 /Users/spencercurtis/Documents/Noislume/Noislume/Models/Filters/ToneAndContrastFilters.swift (in target 'Noislume' from project 'Noislume')
+    cd /Users/spencercurtis/Documents/Noislume
+    
+
+SwiftCompile normal arm64 Compiling\ SettingsTab.swift,\ KeyboardShortcut.swift,\ ImageFilter.swift,\ GeometryFilter.swift,\ SettingsView.swift,\ InversionFilterV2.swift,\ AppSettings.swift,\ InversionView.swift /Users/spencercurtis/Documents/Noislume/Noislume/Views/SettingsTab.swift /Users/spencercurtis/Documents/Noislume/Noislume/Models/KeyboardShortcut.swift /Users/spencercurtis/Documents/Noislume/Noislume/Models/Filters/ImageFilter.swift /Users/spencercurtis/Documents/Noislume/Noislume/Models/Filters/GeometryFilter.swift /Users/spencercurtis/Documents/Noislume/Noislume/Views/SettingsView.swift /Users/spencercurtis/Documents/Noislume/Noislume/Models/Filters/InversionFilterV2.swift /Users/spencercurtis/Documents/Noislume/Noislume/Models/AppSettings.swift /Users/spencercurtis/Documents/Noislume/Noislume/Views/InversionView.swift (in target 'Noislume' from project 'Noislume')
+
+SwiftCompile normal arm64 /Users/spencercurtis/Documents/Noislume/Noislume/Views/SettingsTab.swift (in target 'Noislume' from project 'Noislume')
+    cd /Users/spencercurtis/Documents/Noislume
+    
+
+SwiftCompile normal arm64 /Users/spencercurtis/Documents/Noislume/Noislume/Models/KeyboardShortcut.swift (in target 'Noislume' from project 'Noislume')
+    cd /Users/spencercurtis/Documents/Noislume
+    
+
+SwiftCompile normal arm64 /Users/spencercurtis/Documents/Noislume/Noislume/Models/Filters/ImageFilter.swift (in target 'Noislume' from project 'Noislume')
+    cd /Users/spencercurtis/Documents/Noislume
+    
+
+SwiftCompile normal arm64 /Users/spencercurtis/Documents/Noislume/Noislume/Models/Filters/GeometryFilter.swift (in target 'Noislume' from project 'Noislume')
+    cd /Users/spencercurtis/Documents/Noislume
+    
+
+SwiftCompile normal arm64 /Users/spencercurtis/Documents/Noislume/Noislume/Views/SettingsView.swift (in target 'Noislume' from project 'Noislume')
+    cd /Users/spencercurtis/Documents/Noislume
+    
+
+SwiftCompile normal arm64 /Users/spencercurtis/Documents/Noislume/Noislume/Models/Filters/InversionFilterV2.swift (in target 'Noislume' from project 'Noislume')
+    cd /Users/spencercurtis/Documents/Noislume
+    
+
+SwiftCompile normal arm64 /Users/spencercurtis/Documents/Noislume/Noislume/Models/AppSettings.swift (in target 'Noislume' from project 'Noislume')
+    cd /Users/spencercurtis/Documents/Noislume
+    
+
+SwiftCompile normal arm64 /Users/spencercurtis/Documents/Noislume/Noislume/Views/InversionView.swift (in target 'Noislume' from project 'Noislume')
+    cd /Users/spencercurtis/Documents/Noislume
+    
+
+SwiftCompile normal arm64 Compiling\ CropOverlay.swift,\ ImageFileNavigator.swift,\ KeyboardShortcutManager.swift,\ FrameworkVerifier.swift,\ HistogramView.swift,\ V2EditingControls.swift,\ GeometryFilters.swift /Users/spencercurtis/Documents/Noislume/Noislume/Views/CropOverlay.swift /Users/spencercurtis/Documents/Noislume/Noislume/Models/ImageFileNavigator.swift /Users/spencercurtis/Documents/Noislume/Noislume/Utils/KeyboardShortcutManager.swift /Users/spencercurtis/Documents/Noislume/Noislume/Utils/FrameworkVerifier.swift /Users/spencercurtis/Documents/Noislume/Noislume/Views/Components/HistogramView.swift /Users/spencercurtis/Documents/Noislume/Noislume/Views/Components/V2EditingControls.swift /Users/spencercurtis/Documents/Noislume/Noislume/Models/Filters/GeometryFilters.swift (in target 'Noislume' from project 'Noislume')
+SwiftCompile normal arm64 /Users/spencercurtis/Documents/Noislume/Noislume/Views/CropOverlay.swift (in target 'Noislume' from project 'Noislume')
+    cd /Users/spencercurtis/Documents/Noislume
+    
+
+SwiftCompile normal arm64 /Users/spencercurtis/Documents/Noislume/Noislume/Models/ImageFileNavigator.swift (in target 'Noislume' from project 'Noislume')
+    cd /Users/spencercurtis/Documents/Noislume
+    
+
+SwiftCompile normal arm64 /Users/spencercurtis/Documents/Noislume/Noislume/Utils/KeyboardShortcutManager.swift (in target 'Noislume' from project 'Noislume')
+    cd /Users/spencercurtis/Documents/Noislume
+    
+
+SwiftCompile normal arm64 /Users/spencercurtis/Documents/Noislume/Noislume/Utils/FrameworkVerifier.swift (in target 'Noislume' from project 'Noislume')
+    cd /Users/spencercurtis/Documents/Noislume
+    
+
+SwiftCompile normal arm64 /Users/spencercurtis/Documents/Noislume/Noislume/Views/Components/HistogramView.swift (in target 'Noislume' from project 'Noislume')
+    cd /Users/spencercurtis/Documents/Noislume
+    
+
+SwiftCompile normal arm64 /Users/spencercurtis/Documents/Noislume/Noislume/Views/Components/V2EditingControls.swift (in target 'Noislume' from project 'Noislume')
+    cd /Users/spencercurtis/Documents/Noislume
+    
+
+SwiftCompile normal arm64 /Users/spencercurtis/Documents/Noislume/Noislume/Models/Filters/GeometryFilters.swift (in target 'Noislume' from project 'Noislume')
+    cd /Users/spencercurtis/Documents/Noislume
+    
+
+SwiftDriverJobDiscovery normal arm64 Emitting module for Noislume (in target 'Noislume' from project 'Noislume')
+
+SwiftDriver\ Compilation\ Requirements Noislume normal arm64 com.apple.xcode.tools.swift.compiler (in target 'Noislume' from project 'Noislume')
+    cd /Users/spencercurtis/Documents/Noislume
+    builtin-Swift-Compilation-Requirements -- /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc -module-name Noislume -Onone -enforce-exclusivity\=checked @/Users/spencercurtis/Library/Developer/Xcode/DerivedData/Noislume-fvkzpfnpeooukldyiycenalsieyk/Build/Intermediates.noindex/Noislume.build/Debug-iphoneos/Noislume.build/Objects-normal/arm64/Noislume.SwiftFileList -DDEBUG -enable-bare-slash-regex -enable-experimental-feature DebugDescriptionMacro -sdk /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS18.4.sdk -target arm64-apple-ios18.4 -g -module-cache-path /Users/spencercurtis/Library/Developer/Xcode/DerivedData/ModuleCache.noindex -Xfrontend -serialize-debugging-options -profile-coverage-mapping -profile-generate -enable-testing -index-store-path /Users/spencercurtis/Library/Developer/Xcode/DerivedData/Noislume-fvkzpfnpeooukldyiycenalsieyk/Index.noindex/DataStore -swift-version 5 -I /Users/spencercurtis/Library/Developer/Xcode/DerivedData/Noislume-fvkzpfnpeooukldyiycenalsieyk/Build/Products/Debug-iphoneos -F /Users/spencercurtis/Library/Developer/Xcode/DerivedData/Noislume-fvkzpfnpeooukldyiycenalsieyk/Build/Products/Debug-iphoneos -F /Users/spencercurtis/Documents/Noislume/Noislume/Frameworks -F /Users/spencercurtis/Documents/Noislume/Noislume/Frameworks -emit-localized-strings -emit-localized-strings-path /Users/spencercurtis/Library/Developer/Xcode/DerivedData/Noislume-fvkzpfnpeooukldyiycenalsieyk/Build/Intermediates.noindex/Noislume.build/Debug-iphoneos/Noislume.build/Objects-normal/arm64 -c -j10 -enable-batch-mode -incremental -Xcc -ivfsstatcache -Xcc /Users/spencercurtis/Library/Developer/Xcode/DerivedData/SDKStatCaches.noindex/iphoneos18.4-22E235-a09501eccf75f892bc376f81961b27ba.sdkstatcache -output-file-map /Users/spencercurtis/Library/Developer/Xcode/DerivedData/Noislume-fvkzpfnpeooukldyiycenalsieyk/Build/Intermediates.noindex/Noislume.build/Debug-iphoneos/Noislume.build/Objects-normal/arm64/Noislume-OutputFileMap.json -use-frontend-parseable-output -save-temps -no-color-diagnostics -serialize-diagnostics -emit-dependencies -emit-module -emit-module-path /Users/spencercurtis/Library/Developer/Xcode/DerivedData/Noislume-fvkzpfnpeooukldyiycenalsieyk/Build/Intermediates.noindex/Noislume.build/Debug-iphoneos/Noislume.build/Objects-normal/arm64/Noislume.swiftmodule -validate-clang-modules-once -clang-build-session-file /Users/spencercurtis/Library/Developer/Xcode/DerivedData/ModuleCache.noindex/Session.modulevalidation -Xcc -I/Users/spencercurtis/Library/Developer/Xcode/DerivedData/Noislume-fvkzpfnpeooukldyiycenalsieyk/Build/Intermediates.noindex/Noislume.build/Debug-iphoneos/Noislume.build/swift-overrides.hmap -emit-const-values -Xfrontend -const-gather-protocols-file -Xfrontend /Users/spencercurtis/Library/Developer/Xcode/DerivedData/Noislume-fvkzpfnpeooukldyiycenalsieyk/Build/Intermediates.noindex/Noislume.build/Debug-iphoneos/Noislume.build/Objects-normal/arm64/Noislume_const_extract_protocols.json -Xcc -iquote -Xcc /Users/spencercurtis/Library/Developer/Xcode/DerivedData/Noislume-fvkzpfnpeooukldyiycenalsieyk/Build/Intermediates.noindex/Noislume.build/Debug-iphoneos/Noislume.build/Noislume-generated-files.hmap -Xcc -I/Users/spencercurtis/Library/Developer/Xcode/DerivedData/Noislume-fvkzpfnpeooukldyiycenalsieyk/Build/Intermediates.noindex/Noislume.build/Debug-iphoneos/Noislume.build/Noislume-own-target-headers.hmap -Xcc -I/Users/spencercurtis/Library/Developer/Xcode/DerivedData/Noislume-fvkzpfnpeooukldyiycenalsieyk/Build/Intermediates.noindex/Noislume.build/Debug-iphoneos/Noislume.build/Noislume-all-target-headers.hmap -Xcc -iquote -Xcc /Users/spencercurtis/Library/Developer/Xcode/DerivedData/Noislume-fvkzpfnpeooukldyiycenalsieyk/Build/Intermediates.noindex/Noislume.build/Debug-iphoneos/Noislume.build/Noislume-project-headers.hmap -Xcc -I/Users/spencercurtis/Library/Developer/Xcode/DerivedData/Noislume-fvkzpfnpeooukldyiycenalsieyk/Build/Products/Debug-iphoneos/include -Xcc -I/Users/spencercurtis/Library/Developer/Xcode/DerivedData/Noislume-fvkzpfnpeooukldyiycenalsieyk/Build/Intermediates.noindex/Noislume.build/Debug-iphoneos/Noislume.build/DerivedSources-normal/arm64 -Xcc -I/Users/spencercurtis/Library/Developer/Xcode/DerivedData/Noislume-fvkzpfnpeooukldyiycenalsieyk/Build/Intermediates.noindex/Noislume.build/Debug-iphoneos/Noislume.build/DerivedSources/arm64 -Xcc -I/Users/spencercurtis/Library/Developer/Xcode/DerivedData/Noislume-fvkzpfnpeooukldyiycenalsieyk/Build/Intermediates.noindex/Noislume.build/Debug-iphoneos/Noislume.build/DerivedSources -Xcc -DDEBUG\=1 -emit-objc-header -emit-objc-header-path /Users/spencercurtis/Library/Developer/Xcode/DerivedData/Noislume-fvkzpfnpeooukldyiycenalsieyk/Build/Intermediates.noindex/Noislume.build/Debug-iphoneos/Noislume.build/Objects-normal/arm64/Noislume-Swift.h -import-objc-header /Users/spencercurtis/Documents/Noislume/Noislume/Noislume-Bridging-Header.h -pch-output-dir /Users/spencercurtis/Library/Developer/Xcode/DerivedData/Noislume-fvkzpfnpeooukldyiycenalsieyk/Build/Intermediates.noindex/PrecompiledHeaders -working-directory /Users/spencercurtis/Documents/Noislume -experimental-emit-module-separately -disable-cmo
+
+SwiftDriverJobDiscovery normal arm64 Compiling ShortcutsSettingsView.swift, RawImageModel.swift, ModifierTranslator.swift, ImageState.swift, ContentView.swift, PositiveColorGradeFilter.swift, ExportError.swift, PlatformSpecificTypealiases.swift (in target 'Noislume' from project 'Noislume')
+
+SwiftCompile normal arm64 Compiling\ LibRawWrapper.swift,\ ExposureContrastBrightnessFilter.swift,\ FilmStripItemView.swift,\ PerceptualToneMappingFilter.swift,\ MainMenuManager.swift,\ FoundationExtensions.swift,\ InversionFilter.swift,\ KeyboardShortcutDefinition.swift /Users/spencercurtis/Documents/Noislume/Noislume/Utils/LibRawWrapper.swift /Users/spencercurtis/Documents/Noislume/Noislume/Models/Filters/ExposureContrastBrightnessFilter.swift /Users/spencercurtis/Documents/Noislume/Noislume/Views/FilmStripItemView.swift /Users/spencercurtis/Documents/Noislume/Noislume/Models/Filters/PerceptualToneMappingFilter.swift /Users/spencercurtis/Documents/Noislume/Noislume/Utils/MainMenuManager.swift /Users/spencercurtis/Documents/Noislume/Noislume/Utils/FoundationExtensions.swift /Users/spencercurtis/Documents/Noislume/Noislume/Models/Filters/InversionFilter.swift /Users/spencercurtis/Documents/Noislume/Noislume/Models/KeyboardShortcutDefinition.swift (in target 'Noislume' from project 'Noislume')
+
+SwiftCompile normal arm64 /Users/spencercurtis/Documents/Noislume/Noislume/Utils/LibRawWrapper.swift (in target 'Noislume' from project 'Noislume')
+    cd /Users/spencercurtis/Documents/Noislume
+    
+
+SwiftCompile normal arm64 /Users/spencercurtis/Documents/Noislume/Noislume/Models/Filters/ExposureContrastBrightnessFilter.swift (in target 'Noislume' from project 'Noislume')
+    cd /Users/spencercurtis/Documents/Noislume
+    
+
+SwiftCompile normal arm64 /Users/spencercurtis/Documents/Noislume/Noislume/Views/FilmStripItemView.swift (in target 'Noislume' from project 'Noislume')
+    cd /Users/spencercurtis/Documents/Noislume
+    
+
+SwiftCompile normal arm64 /Users/spencercurtis/Documents/Noislume/Noislume/Models/Filters/PerceptualToneMappingFilter.swift (in target 'Noislume' from project 'Noislume')
+    cd /Users/spencercurtis/Documents/Noislume
+    
+
+SwiftCompile normal arm64 /Users/spencercurtis/Documents/Noislume/Noislume/Utils/MainMenuManager.swift (in target 'Noislume' from project 'Noislume')
+    cd /Users/spencercurtis/Documents/Noislume
+    
+/Users/spencercurtis/Documents/Noislume/Noislume/Utils/MainMenuManager.swift:223:13: warning: initialization of immutable value 'saveShortcutData' was never used; consider replacing with assignment to '_' or removing it
+        let saveShortcutData = settings.getShortcut(forAction: saveActionId) ?? defaultSaveShortcutData
+        ~~~~^~~~~~~~~~~~~~~~
+        _
+/Users/spencercurtis/Documents/Noislume/Noislume/Utils/MainMenuManager.swift:240:13: warning: initialization of immutable value 'toggleCropShortcutData' was never used; consider replacing with assignment to '_' or removing it
+        let toggleCropShortcutData = settings.getShortcut(forAction: toggleCropId) ?? defaultToggleCropShortcutData
+        ~~~~^~~~~~~~~~~~~~~~~~~~~~
+        _
+/Users/spencercurtis/Documents/Noislume/Noislume/Utils/MainMenuManager.swift:251:13: warning: initialization of immutable value 'resetAdjustmentsShortcutData' was never used; consider replacing with assignment to '_' or removing it
+        let resetAdjustmentsShortcutData = settings.getShortcut(forAction: resetAdjustmentsId) ?? defaultResetAdjustmentsShortcutData
+        ~~~~^~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        _
+
+SwiftCompile normal arm64 /Users/spencercurtis/Documents/Noislume/Noislume/Utils/FoundationExtensions.swift (in target 'Noislume' from project 'Noislume')
+    cd /Users/spencercurtis/Documents/Noislume
+    
+
+SwiftCompile normal arm64 /Users/spencercurtis/Documents/Noislume/Noislume/Models/Filters/InversionFilter.swift (in target 'Noislume' from project 'Noislume')
+    cd /Users/spencercurtis/Documents/Noislume
+    
+
+SwiftCompile normal arm64 /Users/spencercurtis/Documents/Noislume/Noislume/Models/KeyboardShortcutDefinition.swift (in target 'Noislume' from project 'Noislume')
+    cd /Users/spencercurtis/Documents/Noislume
+    
+
+SwiftMergeGeneratedHeaders /Users/spencercurtis/Library/Developer/Xcode/DerivedData/Noislume-fvkzpfnpeooukldyiycenalsieyk/Build/Intermediates.noindex/Noislume.build/Debug-iphoneos/Noislume.build/DerivedSources/Noislume-Swift.h /Users/spencercurtis/Library/Developer/Xcode/DerivedData/Noislume-fvkzpfnpeooukldyiycenalsieyk/Build/Intermediates.noindex/Noislume.build/Debug-iphoneos/Noislume.build/Objects-normal/arm64/Noislume-Swift.h (in target 'Noislume' from project 'Noislume')
+    cd /Users/spencercurtis/Documents/Noislume
+    builtin-swiftHeaderTool -arch arm64 /Users/spencercurtis/Library/Developer/Xcode/DerivedData/Noislume-fvkzpfnpeooukldyiycenalsieyk/Build/Intermediates.noindex/Noislume.build/Debug-iphoneos/Noislume.build/Objects-normal/arm64/Noislume-Swift.h -o /Users/spencercurtis/Library/Developer/Xcode/DerivedData/Noislume-fvkzpfnpeooukldyiycenalsieyk/Build/Intermediates.noindex/Noislume.build/Debug-iphoneos/Noislume.build/DerivedSources/Noislume-Swift.h
+
+SwiftDriverJobDiscovery normal arm64 Compiling SettingsTab.swift, KeyboardShortcut.swift, ImageFilter.swift, GeometryFilter.swift, SettingsView.swift, InversionFilterV2.swift, AppSettings.swift, InversionView.swift (in target 'Noislume' from project 'Noislume')
+
+Copy /Users/spencercurtis/Library/Developer/Xcode/DerivedData/Noislume-fvkzpfnpeooukldyiycenalsieyk/Build/Products/Debug-iphoneos/Noislume.swiftmodule/arm64-apple-ios.swiftmodule /Users/spencercurtis/Library/Developer/Xcode/DerivedData/Noislume-fvkzpfnpeooukldyiycenalsieyk/Build/Intermediates.noindex/Noislume.build/Debug-iphoneos/Noislume.build/Objects-normal/arm64/Noislume.swiftmodule (in target 'Noislume' from project 'Noislume')
+    cd /Users/spencercurtis/Documents/Noislume
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -resolve-src-symlinks -rename /Users/spencercurtis/Library/Developer/Xcode/DerivedData/Noislume-fvkzpfnpeooukldyiycenalsieyk/Build/Intermediates.noindex/Noislume.build/Debug-iphoneos/Noislume.build/Objects-normal/arm64/Noislume.swiftmodule /Users/spencercurtis/Library/Developer/Xcode/DerivedData/Noislume-fvkzpfnpeooukldyiycenalsieyk/Build/Products/Debug-iphoneos/Noislume.swiftmodule/arm64-apple-ios.swiftmodule
+
+Copy /Users/spencercurtis/Library/Developer/Xcode/DerivedData/Noislume-fvkzpfnpeooukldyiycenalsieyk/Build/Products/Debug-iphoneos/Noislume.swiftmodule/arm64-apple-ios.swiftdoc /Users/spencercurtis/Library/Developer/Xcode/DerivedData/Noislume-fvkzpfnpeooukldyiycenalsieyk/Build/Intermediates.noindex/Noislume.build/Debug-iphoneos/Noislume.build/Objects-normal/arm64/Noislume.swiftdoc (in target 'Noislume' from project 'Noislume')
+    cd /Users/spencercurtis/Documents/Noislume
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -resolve-src-symlinks -rename /Users/spencercurtis/Library/Developer/Xcode/DerivedData/Noislume-fvkzpfnpeooukldyiycenalsieyk/Build/Intermediates.noindex/Noislume.build/Debug-iphoneos/Noislume.build/Objects-normal/arm64/Noislume.swiftdoc /Users/spencercurtis/Library/Developer/Xcode/DerivedData/Noislume-fvkzpfnpeooukldyiycenalsieyk/Build/Products/Debug-iphoneos/Noislume.swiftmodule/arm64-apple-ios.swiftdoc
+
+Copy /Users/spencercurtis/Library/Developer/Xcode/DerivedData/Noislume-fvkzpfnpeooukldyiycenalsieyk/Build/Products/Debug-iphoneos/Noislume.swiftmodule/arm64-apple-ios.abi.json /Users/spencercurtis/Library/Developer/Xcode/DerivedData/Noislume-fvkzpfnpeooukldyiycenalsieyk/Build/Intermediates.noindex/Noislume.build/Debug-iphoneos/Noislume.build/Objects-normal/arm64/Noislume.abi.json (in target 'Noislume' from project 'Noislume')
+    cd /Users/spencercurtis/Documents/Noislume
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -resolve-src-symlinks -rename /Users/spencercurtis/Library/Developer/Xcode/DerivedData/Noislume-fvkzpfnpeooukldyiycenalsieyk/Build/Intermediates.noindex/Noislume.build/Debug-iphoneos/Noislume.build/Objects-normal/arm64/Noislume.abi.json /Users/spencercurtis/Library/Developer/Xcode/DerivedData/Noislume-fvkzpfnpeooukldyiycenalsieyk/Build/Products/Debug-iphoneos/Noislume.swiftmodule/arm64-apple-ios.abi.json
+
+Copy /Users/spencercurtis/Library/Developer/Xcode/DerivedData/Noislume-fvkzpfnpeooukldyiycenalsieyk/Build/Products/Debug-iphoneos/Noislume.swiftmodule/Project/arm64-apple-ios.swiftsourceinfo /Users/spencercurtis/Library/Developer/Xcode/DerivedData/Noislume-fvkzpfnpeooukldyiycenalsieyk/Build/Intermediates.noindex/Noislume.build/Debug-iphoneos/Noislume.build/Objects-normal/arm64/Noislume.swiftsourceinfo (in target 'Noislume' from project 'Noislume')
+    cd /Users/spencercurtis/Documents/Noislume
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -resolve-src-symlinks -rename /Users/spencercurtis/Library/Developer/Xcode/DerivedData/Noislume-fvkzpfnpeooukldyiycenalsieyk/Build/Intermediates.noindex/Noislume.build/Debug-iphoneos/Noislume.build/Objects-normal/arm64/Noislume.swiftsourceinfo /Users/spencercurtis/Library/Developer/Xcode/DerivedData/Noislume-fvkzpfnpeooukldyiycenalsieyk/Build/Products/Debug-iphoneos/Noislume.swiftmodule/Project/arm64-apple-ios.swiftsourceinfo
+
+LinkAssetCatalog /Users/spencercurtis/Documents/Noislume/Noislume/Assets.xcassets (in target 'Noislume' from project 'Noislume')
+    cd /Users/spencercurtis/Documents/Noislume
+    builtin-linkAssetCatalog --thinned /Users/spencercurtis/Library/Developer/Xcode/DerivedData/Noislume-fvkzpfnpeooukldyiycenalsieyk/Build/Intermediates.noindex/Noislume.build/Debug-iphoneos/Noislume.build/assetcatalog_output/thinned --thinned-dependencies /Users/spencercurtis/Library/Developer/Xcode/DerivedData/Noislume-fvkzpfnpeooukldyiycenalsieyk/Build/Intermediates.noindex/Noislume.build/Debug-iphoneos/Noislume.build/assetcatalog_dependencies_thinned --thinned-info-plist-content /Users/spencercurtis/Library/Developer/Xcode/DerivedData/Noislume-fvkzpfnpeooukldyiycenalsieyk/Build/Intermediates.noindex/Noislume.build/Debug-iphoneos/Noislume.build/assetcatalog_generated_info.plist_thinned --unthinned /Users/spencercurtis/Library/Developer/Xcode/DerivedData/Noislume-fvkzpfnpeooukldyiycenalsieyk/Build/Intermediates.noindex/Noislume.build/Debug-iphoneos/Noislume.build/assetcatalog_output/unthinned --unthinned-dependencies /Users/spencercurtis/Library/Developer/Xcode/DerivedData/Noislume-fvkzpfnpeooukldyiycenalsieyk/Build/Intermediates.noindex/Noislume.build/Debug-iphoneos/Noislume.build/assetcatalog_dependencies_unthinned --unthinned-info-plist-content /Users/spencercurtis/Library/Developer/Xcode/DerivedData/Noislume-fvkzpfnpeooukldyiycenalsieyk/Build/Intermediates.noindex/Noislume.build/Debug-iphoneos/Noislume.build/assetcatalog_generated_info.plist_unthinned --output /Users/spencercurtis/Library/Developer/Xcode/DerivedData/Noislume-fvkzpfnpeooukldyiycenalsieyk/Build/Products/Debug-iphoneos/Noislume.app --plist-output /Users/spencercurtis/Library/Developer/Xcode/DerivedData/Noislume-fvkzpfnpeooukldyiycenalsieyk/Build/Intermediates.noindex/Noislume.build/Debug-iphoneos/Noislume.build/assetcatalog_generated_info.plist
+
+ProcessInfoPlistFile /Users/spencercurtis/Library/Developer/Xcode/DerivedData/Noislume-fvkzpfnpeooukldyiycenalsieyk/Build/Products/Debug-iphoneos/Noislume.app/Info.plist /Users/spencercurtis/Library/Developer/Xcode/DerivedData/Noislume-fvkzpfnpeooukldyiycenalsieyk/Build/Intermediates.noindex/Noislume.build/Debug-iphoneos/Noislume.build/empty-Noislume.plist (in target 'Noislume' from project 'Noislume')
+    cd /Users/spencercurtis/Documents/Noislume
+    builtin-infoPlistUtility /Users/spencercurtis/Library/Developer/Xcode/DerivedData/Noislume-fvkzpfnpeooukldyiycenalsieyk/Build/Intermediates.noindex/Noislume.build/Debug-iphoneos/Noislume.build/empty-Noislume.plist -producttype com.apple.product-type.application -genpkginfo /Users/spencercurtis/Library/Developer/Xcode/DerivedData/Noislume-fvkzpfnpeooukldyiycenalsieyk/Build/Products/Debug-iphoneos/Noislume.app/PkgInfo -expandbuildsettings -format binary -platform iphoneos -additionalcontentfile /Users/spencercurtis/Library/Developer/Xcode/DerivedData/Noislume-fvkzpfnpeooukldyiycenalsieyk/Build/Intermediates.noindex/Noislume.build/Debug-iphoneos/Noislume.build/assetcatalog_generated_info.plist -requiredArchitecture arm64 -o /Users/spencercurtis/Library/Developer/Xcode/DerivedData/Noislume-fvkzpfnpeooukldyiycenalsieyk/Build/Products/Debug-iphoneos/Noislume.app/Info.plist
+
+SwiftDriverJobDiscovery normal arm64 Compiling ShortcutTypes.swift, PositionedHandle.swift, EditingSidebar.swift, ProcessingVersion.swift, EdgeHandles.swift, BlackAndWhiteMixerControlsView.swift, AdjustmentSlider.swift, ExportDocument.swift (in target 'Noislume' from project 'Noislume')
+
+SwiftDriverJobDiscovery normal arm64 Compiling ThumbnailManager.swift, GeneralSettingsView.swift, HistogramData.swift, PersistenceManager.swift, AppDelegate_macOS.swift, NoislumeApp.swift, CollapsibleSection.swift, CustomApplication.swift (in target 'Noislume' from project 'Noislume')
+
+SwiftDriverJobDiscovery normal arm64 Compiling AppCommands.swift, DarkButtonStyle.swift, EffectsSection.swift, ShortcutRow.swift, ShortcutRecorder.swift, ColorCastRefinementControlsView.swift, CoreImageProcessor.swift (in target 'Noislume' from project 'Noislume')
+
+SwiftDriverJobDiscovery normal arm64 Compiling LibRawWrapper.swift, ExposureContrastBrightnessFilter.swift, FilmStripItemView.swift, PerceptualToneMappingFilter.swift, MainMenuManager.swift, FoundationExtensions.swift, InversionFilter.swift, KeyboardShortcutDefinition.swift (in target 'Noislume' from project 'Noislume')
+
+SwiftDriverJobDiscovery normal arm64 Compiling AdjustmentsSidebar.swift, ColorCastAndHueRefinementFilter.swift, V1EditingControls.swift, PolynomialControlsView.swift, InversionViewModel.swift, CornerHandles.swift, PositiveColorGradeControlsView.swift (in target 'Noislume' from project 'Noislume')
+
+SwiftDriverJobDiscovery normal arm64 Compiling ShortcutRecorderService.swift, ColorGradingFilters.swift, FilmBaseNeutralizationFilter.swift, CroppingSection.swift, CroppingView.swift, CIColor+Extensions.swift, ColorAdjustmentsSection.swift, ToneAndContrastFilters.swift (in target 'Noislume' from project 'Noislume')
+
+SwiftDriverJobDiscovery normal arm64 Compiling ThumbnailCacheManager.swift, AppDelegate_iOS.swift, CroppingView+macOS.swift, AutoLevelsChannelNormalizationFilter.swift, ImageAdjustments.swift, FilmStripView.swift, GeneratedAssetSymbols.swift (in target 'Noislume' from project 'Noislume')
+
+SwiftDriverJobDiscovery normal arm64 Compiling CropOverlay.swift, ImageFileNavigator.swift, KeyboardShortcutManager.swift, FrameworkVerifier.swift, HistogramView.swift, V2EditingControls.swift, GeometryFilters.swift (in target 'Noislume' from project 'Noislume')
+
+SwiftDriver\ Compilation Noislume normal arm64 com.apple.xcode.tools.swift.compiler (in target 'Noislume' from project 'Noislume')
+    cd /Users/spencercurtis/Documents/Noislume
+    builtin-Swift-Compilation -- /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc -module-name Noislume -Onone -enforce-exclusivity\=checked @/Users/spencercurtis/Library/Developer/Xcode/DerivedData/Noislume-fvkzpfnpeooukldyiycenalsieyk/Build/Intermediates.noindex/Noislume.build/Debug-iphoneos/Noislume.build/Objects-normal/arm64/Noislume.SwiftFileList -DDEBUG -enable-bare-slash-regex -enable-experimental-feature DebugDescriptionMacro -sdk /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS18.4.sdk -target arm64-apple-ios18.4 -g -module-cache-path /Users/spencercurtis/Library/Developer/Xcode/DerivedData/ModuleCache.noindex -Xfrontend -serialize-debugging-options -profile-coverage-mapping -profile-generate -enable-testing -index-store-path /Users/spencercurtis/Library/Developer/Xcode/DerivedData/Noislume-fvkzpfnpeooukldyiycenalsieyk/Index.noindex/DataStore -swift-version 5 -I /Users/spencercurtis/Library/Developer/Xcode/DerivedData/Noislume-fvkzpfnpeooukldyiycenalsieyk/Build/Products/Debug-iphoneos -F /Users/spencercurtis/Library/Developer/Xcode/DerivedData/Noislume-fvkzpfnpeooukldyiycenalsieyk/Build/Products/Debug-iphoneos -F /Users/spencercurtis/Documents/Noislume/Noislume/Frameworks -F /Users/spencercurtis/Documents/Noislume/Noislume/Frameworks -emit-localized-strings -emit-localized-strings-path /Users/spencercurtis/Library/Developer/Xcode/DerivedData/Noislume-fvkzpfnpeooukldyiycenalsieyk/Build/Intermediates.noindex/Noislume.build/Debug-iphoneos/Noislume.build/Objects-normal/arm64 -c -j10 -enable-batch-mode -incremental -Xcc -ivfsstatcache -Xcc /Users/spencercurtis/Library/Developer/Xcode/DerivedData/SDKStatCaches.noindex/iphoneos18.4-22E235-a09501eccf75f892bc376f81961b27ba.sdkstatcache -output-file-map /Users/spencercurtis/Library/Developer/Xcode/DerivedData/Noislume-fvkzpfnpeooukldyiycenalsieyk/Build/Intermediates.noindex/Noislume.build/Debug-iphoneos/Noislume.build/Objects-normal/arm64/Noislume-OutputFileMap.json -use-frontend-parseable-output -save-temps -no-color-diagnostics -serialize-diagnostics -emit-dependencies -emit-module -emit-module-path /Users/spencercurtis/Library/Developer/Xcode/DerivedData/Noislume-fvkzpfnpeooukldyiycenalsieyk/Build/Intermediates.noindex/Noislume.build/Debug-iphoneos/Noislume.build/Objects-normal/arm64/Noislume.swiftmodule -validate-clang-modules-once -clang-build-session-file /Users/spencercurtis/Library/Developer/Xcode/DerivedData/ModuleCache.noindex/Session.modulevalidation -Xcc -I/Users/spencercurtis/Library/Developer/Xcode/DerivedData/Noislume-fvkzpfnpeooukldyiycenalsieyk/Build/Intermediates.noindex/Noislume.build/Debug-iphoneos/Noislume.build/swift-overrides.hmap -emit-const-values -Xfrontend -const-gather-protocols-file -Xfrontend /Users/spencercurtis/Library/Developer/Xcode/DerivedData/Noislume-fvkzpfnpeooukldyiycenalsieyk/Build/Intermediates.noindex/Noislume.build/Debug-iphoneos/Noislume.build/Objects-normal/arm64/Noislume_const_extract_protocols.json -Xcc -iquote -Xcc /Users/spencercurtis/Library/Developer/Xcode/DerivedData/Noislume-fvkzpfnpeooukldyiycenalsieyk/Build/Intermediates.noindex/Noislume.build/Debug-iphoneos/Noislume.build/Noislume-generated-files.hmap -Xcc -I/Users/spencercurtis/Library/Developer/Xcode/DerivedData/Noislume-fvkzpfnpeooukldyiycenalsieyk/Build/Intermediates.noindex/Noislume.build/Debug-iphoneos/Noislume.build/Noislume-own-target-headers.hmap -Xcc -I/Users/spencercurtis/Library/Developer/Xcode/DerivedData/Noislume-fvkzpfnpeooukldyiycenalsieyk/Build/Intermediates.noindex/Noislume.build/Debug-iphoneos/Noislume.build/Noislume-all-target-headers.hmap -Xcc -iquote -Xcc /Users/spencercurtis/Library/Developer/Xcode/DerivedData/Noislume-fvkzpfnpeooukldyiycenalsieyk/Build/Intermediates.noindex/Noislume.build/Debug-iphoneos/Noislume.build/Noislume-project-headers.hmap -Xcc -I/Users/spencercurtis/Library/Developer/Xcode/DerivedData/Noislume-fvkzpfnpeooukldyiycenalsieyk/Build/Products/Debug-iphoneos/include -Xcc -I/Users/spencercurtis/Library/Developer/Xcode/DerivedData/Noislume-fvkzpfnpeooukldyiycenalsieyk/Build/Intermediates.noindex/Noislume.build/Debug-iphoneos/Noislume.build/DerivedSources-normal/arm64 -Xcc -I/Users/spencercurtis/Library/Developer/Xcode/DerivedData/Noislume-fvkzpfnpeooukldyiycenalsieyk/Build/Intermediates.noindex/Noislume.build/Debug-iphoneos/Noislume.build/DerivedSources/arm64 -Xcc -I/Users/spencercurtis/Library/Developer/Xcode/DerivedData/Noislume-fvkzpfnpeooukldyiycenalsieyk/Build/Intermediates.noindex/Noislume.build/Debug-iphoneos/Noislume.build/DerivedSources -Xcc -DDEBUG\=1 -emit-objc-header -emit-objc-header-path /Users/spencercurtis/Library/Developer/Xcode/DerivedData/Noislume-fvkzpfnpeooukldyiycenalsieyk/Build/Intermediates.noindex/Noislume.build/Debug-iphoneos/Noislume.build/Objects-normal/arm64/Noislume-Swift.h -import-objc-header /Users/spencercurtis/Documents/Noislume/Noislume/Noislume-Bridging-Header.h -pch-output-dir /Users/spencercurtis/Library/Developer/Xcode/DerivedData/Noislume-fvkzpfnpeooukldyiycenalsieyk/Build/Intermediates.noindex/PrecompiledHeaders -working-directory /Users/spencercurtis/Documents/Noislume -experimental-emit-module-separately -disable-cmo
+
+Ld /Users/spencercurtis/Library/Developer/Xcode/DerivedData/Noislume-fvkzpfnpeooukldyiycenalsieyk/Build/Products/Debug-iphoneos/Noislume.app/Noislume.debug.dylib normal (in target 'Noislume' from project 'Noislume')
+    cd /Users/spencercurtis/Documents/Noislume
+    /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang -Xlinker -reproducible -target arm64-apple-ios18.4 -dynamiclib -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS18.4.sdk -O0 -L/Users/spencercurtis/Library/Developer/Xcode/DerivedData/Noislume-fvkzpfnpeooukldyiycenalsieyk/Build/Intermediates.noindex/EagerLinkingTBDs/Debug-iphoneos -L/Users/spencercurtis/Library/Developer/Xcode/DerivedData/Noislume-fvkzpfnpeooukldyiycenalsieyk/Build/Products/Debug-iphoneos -F/Users/spencercurtis/Library/Developer/Xcode/DerivedData/Noislume-fvkzpfnpeooukldyiycenalsieyk/Build/Intermediates.noindex/EagerLinkingTBDs/Debug-iphoneos -F/Users/spencercurtis/Library/Developer/Xcode/DerivedData/Noislume-fvkzpfnpeooukldyiycenalsieyk/Build/Products/Debug-iphoneos -F/Users/spencercurtis/Documents/Noislume/Noislume/Frameworks -F/Users/spencercurtis/Documents/Noislume/Noislume/Frameworks -filelist /Users/spencercurtis/Library/Developer/Xcode/DerivedData/Noislume-fvkzpfnpeooukldyiycenalsieyk/Build/Intermediates.noindex/Noislume.build/Debug-iphoneos/Noislume.build/Objects-normal/arm64/Noislume.LinkFileList -install_name @rpath/Noislume.debug.dylib -Xlinker -rpath -Xlinker @executable_path/../Frameworks -dead_strip -Xlinker -object_path_lto -Xlinker /Users/spencercurtis/Library/Developer/Xcode/DerivedData/Noislume-fvkzpfnpeooukldyiycenalsieyk/Build/Intermediates.noindex/Noislume.build/Debug-iphoneos/Noislume.build/Objects-normal/arm64/Noislume_lto.o -rdynamic -Xlinker -no_deduplicate -Xlinker -debug_variant -Xlinker -dependency_info -Xlinker /Users/spencercurtis/Library/Developer/Xcode/DerivedData/Noislume-fvkzpfnpeooukldyiycenalsieyk/Build/Intermediates.noindex/Noislume.build/Debug-iphoneos/Noislume.build/Objects-normal/arm64/Noislume_dependency_info.dat -fobjc-link-runtime -fprofile-instr-generate -L/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/iphoneos -L/usr/lib/swift -Xlinker -add_ast_path -Xlinker /Users/spencercurtis/Library/Developer/Xcode/DerivedData/Noislume-fvkzpfnpeooukldyiycenalsieyk/Build/Intermediates.noindex/Noislume.build/Debug-iphoneos/Noislume.build/Objects-normal/arm64/Noislume.swiftmodule -Xlinker -alias -Xlinker _main -Xlinker ___debug_main_executable_dylib_entry_point -Xlinker -no_adhoc_codesign -o /Users/spencercurtis/Library/Developer/Xcode/DerivedData/Noislume-fvkzpfnpeooukldyiycenalsieyk/Build/Products/Debug-iphoneos/Noislume.app/Noislume.debug.dylib
+
+ConstructStubExecutorLinkFileList /Users/spencercurtis/Library/Developer/Xcode/DerivedData/Noislume-fvkzpfnpeooukldyiycenalsieyk/Build/Intermediates.noindex/Noislume.build/Debug-iphoneos/Noislume.build/Noislume-ExecutorLinkFileList-normal-arm64.txt (in target 'Noislume' from project 'Noislume')
+    cd /Users/spencercurtis/Documents/Noislume
+    construct-stub-executor-link-file-list /Users/spencercurtis/Library/Developer/Xcode/DerivedData/Noislume-fvkzpfnpeooukldyiycenalsieyk/Build/Products/Debug-iphoneos/Noislume.app/Noislume.debug.dylib /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/usr/lib/libPreviewsJITStubExecutor_no_swift_entry_point.a /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/usr/lib/libPreviewsJITStubExecutor.a --output /Users/spencercurtis/Library/Developer/Xcode/DerivedData/Noislume-fvkzpfnpeooukldyiycenalsieyk/Build/Intermediates.noindex/Noislume.build/Debug-iphoneos/Noislume.build/Noislume-ExecutorLinkFileList-normal-arm64.txt
+note: Using stub executor library with Swift entry point. (in target 'Noislume' from project 'Noislume')
+
+Ld /Users/spencercurtis/Library/Developer/Xcode/DerivedData/Noislume-fvkzpfnpeooukldyiycenalsieyk/Build/Products/Debug-iphoneos/Noislume.app/Noislume normal (in target 'Noislume' from project 'Noislume')
+    cd /Users/spencercurtis/Documents/Noislume
+    /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang -Xlinker -reproducible -target arm64-apple-ios18.4 -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS18.4.sdk -O0 -L/Users/spencercurtis/Library/Developer/Xcode/DerivedData/Noislume-fvkzpfnpeooukldyiycenalsieyk/Build/Products/Debug-iphoneos -F/Users/spencercurtis/Library/Developer/Xcode/DerivedData/Noislume-fvkzpfnpeooukldyiycenalsieyk/Build/Products/Debug-iphoneos -F/Users/spencercurtis/Documents/Noislume/Noislume/Frameworks -F/Users/spencercurtis/Documents/Noislume/Noislume/Frameworks -Xlinker -rpath -Xlinker @executable_path -Xlinker -rpath -Xlinker @executable_path/../Frameworks -rdynamic -Xlinker -no_deduplicate -Xlinker -debug_variant -e ___debug_blank_executor_main -Xlinker -sectcreate -Xlinker __TEXT -Xlinker __debug_dylib -Xlinker /Users/spencercurtis/Library/Developer/Xcode/DerivedData/Noislume-fvkzpfnpeooukldyiycenalsieyk/Build/Intermediates.noindex/Noislume.build/Debug-iphoneos/Noislume.build/Noislume-DebugDylibPath-normal-arm64.txt -Xlinker -sectcreate -Xlinker __TEXT -Xlinker __debug_instlnm -Xlinker /Users/spencercurtis/Library/Developer/Xcode/DerivedData/Noislume-fvkzpfnpeooukldyiycenalsieyk/Build/Intermediates.noindex/Noislume.build/Debug-iphoneos/Noislume.build/Noislume-DebugDylibInstallName-normal-arm64.txt -Xlinker -filelist -Xlinker /Users/spencercurtis/Library/Developer/Xcode/DerivedData/Noislume-fvkzpfnpeooukldyiycenalsieyk/Build/Intermediates.noindex/Noislume.build/Debug-iphoneos/Noislume.build/Noislume-ExecutorLinkFileList-normal-arm64.txt /Users/spencercurtis/Library/Developer/Xcode/DerivedData/Noislume-fvkzpfnpeooukldyiycenalsieyk/Build/Products/Debug-iphoneos/Noislume.app/Noislume.debug.dylib -Xlinker -no_adhoc_codesign -o /Users/spencercurtis/Library/Developer/Xcode/DerivedData/Noislume-fvkzpfnpeooukldyiycenalsieyk/Build/Products/Debug-iphoneos/Noislume.app/Noislume
+
+CopySwiftLibs /Users/spencercurtis/Library/Developer/Xcode/DerivedData/Noislume-fvkzpfnpeooukldyiycenalsieyk/Build/Products/Debug-iphoneos/Noislume.app (in target 'Noislume' from project 'Noislume')
+    cd /Users/spencercurtis/Documents/Noislume
+    builtin-swiftStdLibTool --copy --verbose --sign 36456986D152EF0FF834427A63D8D192F43182D2 --scan-executable /Users/spencercurtis/Library/Developer/Xcode/DerivedData/Noislume-fvkzpfnpeooukldyiycenalsieyk/Build/Products/Debug-iphoneos/Noislume.app/Noislume.debug.dylib --scan-folder /Users/spencercurtis/Library/Developer/Xcode/DerivedData/Noislume-fvkzpfnpeooukldyiycenalsieyk/Build/Products/Debug-iphoneos/Noislume.app/Frameworks --scan-folder /Users/spencercurtis/Library/Developer/Xcode/DerivedData/Noislume-fvkzpfnpeooukldyiycenalsieyk/Build/Products/Debug-iphoneos/Noislume.app/PlugIns --scan-folder /Users/spencercurtis/Library/Developer/Xcode/DerivedData/Noislume-fvkzpfnpeooukldyiycenalsieyk/Build/Products/Debug-iphoneos/Noislume.app/SystemExtensions --scan-folder /Users/spencercurtis/Library/Developer/Xcode/DerivedData/Noislume-fvkzpfnpeooukldyiycenalsieyk/Build/Products/Debug-iphoneos/Noislume.app/Extensions --platform iphoneos --toolchain /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain --destination /Users/spencercurtis/Library/Developer/Xcode/DerivedData/Noislume-fvkzpfnpeooukldyiycenalsieyk/Build/Products/Debug-iphoneos/Noislume.app/Frameworks --strip-bitcode --strip-bitcode-tool /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/bitcode_strip --emit-dependency-info /Users/spencercurtis/Library/Developer/Xcode/DerivedData/Noislume-fvkzpfnpeooukldyiycenalsieyk/Build/Intermediates.noindex/Noislume.build/Debug-iphoneos/Noislume.build/SwiftStdLibToolInputDependencies.dep --filter-for-swift-os
+
+ExtractAppIntentsMetadata (in target 'Noislume' from project 'Noislume')
+    cd /Users/spencercurtis/Documents/Noislume
+    /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/appintentsmetadataprocessor --toolchain-dir /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain --module-name Noislume --sdk-root /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS18.4.sdk --xcode-version 16E140 --platform-family iOS --deployment-target 18.4 --bundle-identifier com.SpencerCurtis.Noislume --output /Users/spencercurtis/Library/Developer/Xcode/DerivedData/Noislume-fvkzpfnpeooukldyiycenalsieyk/Build/Products/Debug-iphoneos/Noislume.app --target-triple arm64-apple-ios18.4 --binary-file /Users/spencercurtis/Library/Developer/Xcode/DerivedData/Noislume-fvkzpfnpeooukldyiycenalsieyk/Build/Products/Debug-iphoneos/Noislume.app/Noislume --dependency-file /Users/spencercurtis/Library/Developer/Xcode/DerivedData/Noislume-fvkzpfnpeooukldyiycenalsieyk/Build/Intermediates.noindex/Noislume.build/Debug-iphoneos/Noislume.build/Objects-normal/arm64/Noislume_dependency_info.dat --stringsdata-file /Users/spencercurtis/Library/Developer/Xcode/DerivedData/Noislume-fvkzpfnpeooukldyiycenalsieyk/Build/Intermediates.noindex/Noislume.build/Debug-iphoneos/Noislume.build/Objects-normal/arm64/ExtractedAppShortcutsMetadata.stringsdata --source-file-list /Users/spencercurtis/Library/Developer/Xcode/DerivedData/Noislume-fvkzpfnpeooukldyiycenalsieyk/Build/Intermediates.noindex/Noislume.build/Debug-iphoneos/Noislume.build/Objects-normal/arm64/Noislume.SwiftFileList --metadata-file-list /Users/spencercurtis/Library/Developer/Xcode/DerivedData/Noislume-fvkzpfnpeooukldyiycenalsieyk/Build/Intermediates.noindex/Noislume.build/Debug-iphoneos/Noislume.build/Noislume.DependencyMetadataFileList --static-metadata-file-list /Users/spencercurtis/Library/Developer/Xcode/DerivedData/Noislume-fvkzpfnpeooukldyiycenalsieyk/Build/Intermediates.noindex/Noislume.build/Debug-iphoneos/Noislume.build/Noislume.DependencyStaticMetadataFileList --swift-const-vals-list /Users/spencercurtis/Library/Developer/Xcode/DerivedData/Noislume-fvkzpfnpeooukldyiycenalsieyk/Build/Intermediates.noindex/Noislume.build/Debug-iphoneos/Noislume.build/Objects-normal/arm64/Noislume.SwiftConstValuesFileList --compile-time-extraction --deployment-aware-processing --validate-assistant-intents --no-app-shortcuts-localization
+2025-05-18 15:56:25.197 appintentsmetadataprocessor[47363:33368763] Starting appintentsmetadataprocessor export
+2025-05-18 15:56:25.199 appintentsmetadataprocessor[47363:33368763] warning: Metadata extraction skipped. No AppIntents.framework dependency found.
+
+AppIntentsSSUTraining (in target 'Noislume' from project 'Noislume')
+    cd /Users/spencercurtis/Documents/Noislume
+    /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/appintentsnltrainingprocessor --infoplist-path /Users/spencercurtis/Library/Developer/Xcode/DerivedData/Noislume-fvkzpfnpeooukldyiycenalsieyk/Build/Products/Debug-iphoneos/Noislume.app/Info.plist --temp-dir-path /Users/spencercurtis/Library/Developer/Xcode/DerivedData/Noislume-fvkzpfnpeooukldyiycenalsieyk/Build/Intermediates.noindex/Noislume.build/Debug-iphoneos/Noislume.build/ssu --bundle-id com.SpencerCurtis.Noislume --product-path /Users/spencercurtis/Library/Developer/Xcode/DerivedData/Noislume-fvkzpfnpeooukldyiycenalsieyk/Build/Products/Debug-iphoneos/Noislume.app --extracted-metadata-path /Users/spencercurtis/Library/Developer/Xcode/DerivedData/Noislume-fvkzpfnpeooukldyiycenalsieyk/Build/Products/Debug-iphoneos/Noislume.app/Metadata.appintents --metadata-file-list /Users/spencercurtis/Library/Developer/Xcode/DerivedData/Noislume-fvkzpfnpeooukldyiycenalsieyk/Build/Intermediates.noindex/Noislume.build/Debug-iphoneos/Noislume.build/Noislume.DependencyMetadataFileList --archive-ssu-assets
+2025-05-18 15:56:25.213 appintentsnltrainingprocessor[47364:33368764] Parsing options for appintentsnltrainingprocessor
+2025-05-18 15:56:25.214 appintentsnltrainingprocessor[47364:33368764] No AppShortcuts found - Skipping.
+
+CodeSign /Users/spencercurtis/Library/Developer/Xcode/DerivedData/Noislume-fvkzpfnpeooukldyiycenalsieyk/Build/Products/Debug-iphoneos/Noislume.app/Noislume.debug.dylib (in target 'Noislume' from project 'Noislume')
+    cd /Users/spencercurtis/Documents/Noislume
+    
+    Signing Identity:     "Apple Development: spencercolecurtis@gmail.com (28TJB6GR6U)"
+    Provisioning Profile: "iOS Team Provisioning Profile: com.SpencerCurtis.Noislume"
+                          (6935b6d1-6284-4d9d-be9a-de4f493c251d)
+    
+    /usr/bin/codesign --force --sign 36456986D152EF0FF834427A63D8D192F43182D2 -o runtime --timestamp\=none --generate-entitlement-der /Users/spencercurtis/Library/Developer/Xcode/DerivedData/Noislume-fvkzpfnpeooukldyiycenalsieyk/Build/Products/Debug-iphoneos/Noislume.app/Noislume.debug.dylib
+
+CodeSign /Users/spencercurtis/Library/Developer/Xcode/DerivedData/Noislume-fvkzpfnpeooukldyiycenalsieyk/Build/Products/Debug-iphoneos/Noislume.app/__preview.dylib (in target 'Noislume' from project 'Noislume')
+    cd /Users/spencercurtis/Documents/Noislume
+    
+    Signing Identity:     "Apple Development: spencercolecurtis@gmail.com (28TJB6GR6U)"
+    Provisioning Profile: "iOS Team Provisioning Profile: com.SpencerCurtis.Noislume"
+                          (6935b6d1-6284-4d9d-be9a-de4f493c251d)
+    
+    /usr/bin/codesign --force --sign 36456986D152EF0FF834427A63D8D192F43182D2 -o runtime --timestamp\=none --generate-entitlement-der /Users/spencercurtis/Library/Developer/Xcode/DerivedData/Noislume-fvkzpfnpeooukldyiycenalsieyk/Build/Products/Debug-iphoneos/Noislume.app/__preview.dylib
+
+CodeSign /Users/spencercurtis/Library/Developer/Xcode/DerivedData/Noislume-fvkzpfnpeooukldyiycenalsieyk/Build/Products/Debug-iphoneos/Noislume.app (in target 'Noislume' from project 'Noislume')
+    cd /Users/spencercurtis/Documents/Noislume
+    
+    Signing Identity:     "Apple Development: spencercolecurtis@gmail.com (28TJB6GR6U)"
+    Provisioning Profile: "iOS Team Provisioning Profile: com.SpencerCurtis.Noislume"
+                          (6935b6d1-6284-4d9d-be9a-de4f493c251d)
+    
+    /usr/bin/codesign --force --sign 36456986D152EF0FF834427A63D8D192F43182D2 -o runtime --entitlements /Users/spencercurtis/Library/Developer/Xcode/DerivedData/Noislume-fvkzpfnpeooukldyiycenalsieyk/Build/Intermediates.noindex/Noislume.build/Debug-iphoneos/Noislume.build/Noislume.app.xcent --timestamp\=none --generate-entitlement-der /Users/spencercurtis/Library/Developer/Xcode/DerivedData/Noislume-fvkzpfnpeooukldyiycenalsieyk/Build/Products/Debug-iphoneos/Noislume.app
+
+RegisterExecutionPolicyException /Users/spencercurtis/Library/Developer/Xcode/DerivedData/Noislume-fvkzpfnpeooukldyiycenalsieyk/Build/Products/Debug-iphoneos/Noislume.app (in target 'Noislume' from project 'Noislume')
+    cd /Users/spencercurtis/Documents/Noislume
+    builtin-RegisterExecutionPolicyException /Users/spencercurtis/Library/Developer/Xcode/DerivedData/Noislume-fvkzpfnpeooukldyiycenalsieyk/Build/Products/Debug-iphoneos/Noislume.app
+
+Validate /Users/spencercurtis/Library/Developer/Xcode/DerivedData/Noislume-fvkzpfnpeooukldyiycenalsieyk/Build/Products/Debug-iphoneos/Noislume.app (in target 'Noislume' from project 'Noislume')
+    cd /Users/spencercurtis/Documents/Noislume
+    builtin-validationUtility /Users/spencercurtis/Library/Developer/Xcode/DerivedData/Noislume-fvkzpfnpeooukldyiycenalsieyk/Build/Products/Debug-iphoneos/Noislume.app -infoplist-subpath Info.plist
+
+Touch /Users/spencercurtis/Library/Developer/Xcode/DerivedData/Noislume-fvkzpfnpeooukldyiycenalsieyk/Build/Products/Debug-iphoneos/Noislume.app (in target 'Noislume' from project 'Noislume')
+    cd /Users/spencercurtis/Documents/Noislume
+    /usr/bin/touch -c /Users/spencercurtis/Library/Developer/Xcode/DerivedData/Noislume-fvkzpfnpeooukldyiycenalsieyk/Build/Products/Debug-iphoneos/Noislume.app
+
+** BUILD SUCCEEDED **
+

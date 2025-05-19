@@ -1,6 +1,10 @@
 import SwiftUI
 import Combine
-import AppKit // For NSApp and NSMenuItem
+#if os(macOS)
+import AppKit // For NSEvent.ModifierFlags
+#elseif os(iOS)
+import UIKit
+#endif
 
 struct ShortcutsSettingsView: View {
     @ObservedObject var settings: AppSettings
@@ -63,58 +67,79 @@ struct ShortcutsSettingsView: View {
                 .padding(.leading)
             }
             
+            VStack(alignment: .leading, spacing: 12) {
+                Text("Zoom")
+                    .fontWeight(.bold)
+                
+                VStack(spacing: 12) {
+                    ShortcutRow(
+                        label: "Zoom In:",
+                        currentShortcut: getRecordedShortcutData(for: "zoomInAction"),
+                        isRecording: shortcutService.isRecording && actionBeingRecorded == "zoomInAction",
+                        action: { handleShortcutRecording(for: "zoomInAction") }
+                    )
+                    
+                    ShortcutRow(
+                        label: "Zoom Out:",
+                        currentShortcut: getRecordedShortcutData(for: "zoomOutAction"),
+                        isRecording: shortcutService.isRecording && actionBeingRecorded == "zoomOutAction",
+                        action: { handleShortcutRecording(for: "zoomOutAction") }
+                    )
+                    
+                    ShortcutRow(
+                        label: "Zoom to Fit:",
+                        currentShortcut: getRecordedShortcutData(for: "zoomToFitAction"),
+                        isRecording: shortcutService.isRecording && actionBeingRecorded == "zoomToFitAction",
+                        action: { handleShortcutRecording(for: "zoomToFitAction") }
+                    )
+                }
+                .padding(.leading)
+            }
+            
             if let error = shortcutService.recordingError {
                 Text("Error: \(error)")
                     .foregroundColor(.red)
             }
         }
         .padding()
+        #if os(macOS)
         .onChange(of: shortcutService.recordedShortcut) { oldValue, newValue in
             guard let actionId = actionBeingRecorded, let shortcutData = newValue else { return }
             
-            if let menu = NSApp.mainMenu {
-                switch actionId {
-                case "openFileAction", "saveFileAction":
-                    if let fileMenu = menu.items.first(where: { $0.submenu?.title == "File" })?.submenu,
-                       let menuItem = fileMenu.items.first(where: {
-                           $0.action == (actionId == "openFileAction" ?
-                               #selector(AppDelegate.handleOpenFile) :
-                               #selector(AppDelegate.handleSaveFile))
-                       }) {
-                        menuItem.keyEquivalent = shortcutData.key.lowercased()
-                        menuItem.keyEquivalentModifierMask = shortcutData.modifiers
-                    }
-                    
-                case "toggleCropAction", "resetAdjustmentsAction":
-                    if let editMenu = menu.items.first(where: { $0.submenu?.title == "Edit" })?.submenu,
-                       let menuItem = editMenu.items.first(where: {
-                           $0.action == (actionId == "toggleCropAction" ?
-                               #selector(AppDelegate.handleToggleCrop) :
-                               #selector(AppDelegate.handleResetAdjustments))
-                       }) {
-                        menuItem.keyEquivalent = shortcutData.key.lowercased()
-                        menuItem.keyEquivalentModifierMask = shortcutData.modifiers
-                    }
-                    
-                default:
-                    break
-                }
+            guard let appDelegate = NSApp.delegate as? AppDelegateMacOS,
+                  let menu = NSApp.mainMenu else { 
+                print("Error: Could not get AppDelegateMacOS or main menu.")
+                actionBeingRecorded = nil
+                return
             }
-            
+
+            // First, update the shortcut in AppSettings
             settings.updateShortcut(forAction: actionId, shortcut: shortcutData)
+            
+            // Then, tell MainMenuManager to refresh all shortcuts in the menu
+            // This will pick up the change made above.
+            appDelegate.mainMenuManager.updateShortcuts(on: menu, using: settings)
+            
             actionBeingRecorded = nil
         }
+        #endif
     }
     
     private func handleShortcutRecording(for actionId: String) {
+        #if os(macOS)
         if shortcutService.isRecording {
             shortcutService.stopRecording()
             actionBeingRecorded = nil
         } else {
             actionBeingRecorded = actionId
-            shortcutService.startRecording { event in
-                print("SettingsView: Event captured for \(actionId) - \(event.charactersIgnoringModifiers ?? "nil")")
+            shortcutService.startRecording { (event: NSEvent) -> Void in
+                print("SettingsView (macOS): Event captured for \(actionId) - \(event.charactersIgnoringModifiers ?? "nil")")
             }
         }
+        #else
+        print("iOS: Shortcut recording via live key events is not available through this UI.")
+        shortcutService.isRecording = false
+        actionBeingRecorded = nil
+        #endif
     }
 } 

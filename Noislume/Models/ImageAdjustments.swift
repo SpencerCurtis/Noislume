@@ -1,8 +1,11 @@
 import Foundation
 import CoreImage
-import AppKit // Import AppKit for NSColor
 import SwiftUI // Moved import to top level
-
+#if os(macOS)
+import AppKit // For NSEvent.ModifierFlags
+#elseif os(iOS)
+import UIKit
+#endif
 // Define CodableColor
 struct CodableColor: Codable, Equatable {
     var red: CGFloat
@@ -17,30 +20,33 @@ struct CodableColor: Codable, Equatable {
         self.alpha = alpha
     }
 
-    init(color: NSColor) {
-        // Declare local CGFloat variables to receive the color components.
-        var r: CGFloat = 0.0
-        var g: CGFloat = 0.0
-        var b: CGFloat = 0.0
-        var a: CGFloat = 0.0
-        
-        // Attempt to convert to sRGB color space to get reliable components
+    init(color: PlatformColor) {
+        var r: CGFloat = 0
+        var g: CGFloat = 0
+        var b: CGFloat = 0
+        var a: CGFloat = 0
+        #if os(macOS)
         if let srgbColor = color.usingColorSpace(.sRGB) {
             srgbColor.getRed(&r, green: &g, blue: &b, alpha: &a)
         } else {
-            // Fallback if conversion fails (should be rare for common colors)
-            color.getRed(&r, green: &g, blue: &b, alpha: &a)
+            // If conversion to sRGB fails, this color can't be represented in RGBA directly.
+            // For NSColor.clear, its effective RGBA is (0,0,0,0).
+            // If it's some other non-convertible color, defaulting to clear black is a safe fallback.
+            print("Warning: NSColor instance \(color) could not be converted to sRGB. Initializing CodableColor with (0,0,0,0).")
+            r = 0; g = 0; b = 0; a = 0
         }
-        
-        // Assign the retrieved values to the struct's properties.
+        #elseif os(iOS)
+        // UIColor's getRed method is generally more flexible or expects RGB compatible colors.
+        color.getRed(&r, green: &g, blue: &b, alpha: &a)
+        #endif
         self.red = r
         self.green = g
         self.blue = b
         self.alpha = a
     }
 
-    var nsColor: NSColor {
-        return NSColor(srgbRed: red, green: green, blue: blue, alpha: alpha)
+    var platformColor: PlatformColor {
+        return PlatformColor(red: red, green: green, blue: blue, alpha: alpha)
     }
     
     var ciColor: CIColor {
@@ -49,7 +55,7 @@ struct CodableColor: Codable, Equatable {
 
     // Convenience for SwiftUI Color
     var swiftUIColor: Color {
-        return Color(nsColor)
+        Color(PlatformColor(red: red, green: green, blue: blue, alpha: alpha))
     }
 
     // Common colors
@@ -71,7 +77,7 @@ struct ImageAdjustments: Codable {
     var exposure: Float = 0
     var contrast: Float = 1
     var brightness: Float = 0
-    var gamma: Float = 1
+    var gamma: Float = 2.2
     var highlights: Float = 0
     var shadows: Float = 0
     var lights: Float = 0
@@ -141,6 +147,10 @@ struct ImageAdjustments: Codable {
     // MARK: - Film Base Sampling
     var filmBaseSamplePoint: CGPoint?       // User-tapped point
     var filmBaseSamplePointColor: CIColor?  // Sampled color for neutralization
+    // NEW Film Base Color components (Codable)
+    var filmBaseColorRed: Float?
+    var filmBaseColorGreen: Float?
+    var filmBaseColorBlue: Float?
 
     struct PerspectiveCorrection: Codable {
         var points: [CGPoint]
@@ -155,6 +165,11 @@ struct ImageAdjustments: Codable {
 
     var whiteBalanceTemperature: CGFloat = 6500
     var whiteBalanceTint: CGFloat = 0
+    // NEW White Balance components (Codable)
+    var whiteBalanceSamplePoint: CGPoint? // User-tapped point for white balance
+    var whiteBalanceNeutralRed: Float?
+    var whiteBalanceNeutralGreen: Float?
+    var whiteBalanceNeutralBlue: Float?
 
     // MARK: - Perceptual Tone Mapping (S-Curve)
     var sCurveShadowLift: CGFloat = 0.0 // Range: -0.25 to 0.25 (approx, relative to 0.25 shadow point)
@@ -165,11 +180,11 @@ struct ImageAdjustments: Codable {
     var midtoneNeutralizationStrength: CGFloat = 1.0 // Range 0.0 to 1.0
 
     var shadowTintAngle: CGFloat = 0.0 // Degrees, 0-360
-    var shadowTintColor: CodableColor = CodableColor(color: .clear) // User picks color, alpha is intensity
+    var shadowTintColor: CodableColor = CodableColor(color: PlatformColor.clear) // User picks color, alpha is intensity
     var shadowTintStrength: CGFloat = 0.0 // Range 0.0 to 1.0 (effectively opacity)
 
     var highlightTintAngle: CGFloat = 0.0 // Degrees, 0-360
-    var highlightTintColor: CodableColor = CodableColor(color: .clear) // User picks color, alpha is intensity
+    var highlightTintColor: CodableColor = CodableColor(color: PlatformColor.clear) // User picks color, alpha is intensity
     var highlightTintStrength: CGFloat = 0.0 // Range 0.0 to 1.0 (effectively opacity)
     
     // For targeted hue/saturation adjustments
@@ -178,6 +193,9 @@ struct ImageAdjustments: Codable {
     var targetCyanHueRangeWidth: CGFloat = 30.0  // Degrees, e.g., +/- 15 degrees around center
     var targetCyanSaturationAdjustment: CGFloat = 0.0 // -1.0 (desaturate) to 1.0 (saturate)
     var targetCyanBrightnessAdjustment: CGFloat = 0.0 // -1.0 (darken) to 1.0 (brighten)
+
+    // New property to control post-geometry filter application
+    var applyPostGeometryFilters: Bool = true
 
     // Default initializer
     init() {
@@ -212,6 +230,10 @@ struct ImageAdjustments: Codable {
         bwBlueContribution = 0.114
         filmBaseSamplePoint = nil
         filmBaseSamplePointColor = nil
+        // Reset NEW film base color components
+        filmBaseColorRed = nil
+        filmBaseColorGreen = nil
+        filmBaseColorBlue = nil
         sharpness = 0.0
         luminanceNoise = 0.0
         noiseReduction = 0.0
@@ -241,15 +263,20 @@ struct ImageAdjustments: Codable {
         whiteBalanceSampledColor = nil
         whiteBalanceTemperature = 6500
         whiteBalanceTint = 0
+        // Reset NEW white balance components
+        whiteBalanceSamplePoint = nil
+        whiteBalanceNeutralRed = nil
+        whiteBalanceNeutralGreen = nil
+        whiteBalanceNeutralBlue = nil
         sCurveShadowLift = 0.0
         sCurveHighlightPull = 0.0
         applyMidtoneNeutralization = false
         midtoneNeutralizationStrength = 1.0
         shadowTintAngle = 0.0
-        shadowTintColor = CodableColor(color: .clear)
+        shadowTintColor = CodableColor(color: PlatformColor.clear)
         shadowTintStrength = 0.0
         highlightTintAngle = 0.0
-        highlightTintColor = CodableColor(color: .clear)
+        highlightTintColor = CodableColor(color: PlatformColor.clear)
         highlightTintStrength = 0.0
         targetCyanHueRangeCenter = 180.0
         targetCyanHueRangeWidth = 30.0
@@ -279,10 +306,10 @@ struct ImageAdjustments: Codable {
         applyMidtoneNeutralization = false
         midtoneNeutralizationStrength = 1.0
         shadowTintAngle = 0.0
-        shadowTintColor = CodableColor(color: .clear)
+        shadowTintColor = CodableColor(color: PlatformColor.clear)
         shadowTintStrength = 0.0
         highlightTintAngle = 0.0
-        highlightTintColor = CodableColor(color: .clear)
+        highlightTintColor = CodableColor(color: PlatformColor.clear)
         highlightTintStrength = 0.0
         targetCyanHueRangeCenter = 180.0
         targetCyanHueRangeWidth = 30.0
@@ -471,10 +498,10 @@ struct ImageAdjustments: Codable {
         applyMidtoneNeutralization = try container.decodeIfPresent(Bool.self, forKey: .applyMidtoneNeutralization) ?? false
         midtoneNeutralizationStrength = try container.decodeIfPresent(CGFloat.self, forKey: .midtoneNeutralizationStrength) ?? 1.0
         shadowTintAngle = try container.decodeIfPresent(CGFloat.self, forKey: .shadowTintAngle) ?? 0.0
-        shadowTintColor = try container.decodeIfPresent(CodableColor.self, forKey: .shadowTintColor) ?? CodableColor(color: .clear)
+        shadowTintColor = try container.decodeIfPresent(CodableColor.self, forKey: .shadowTintColor) ?? CodableColor(color: PlatformColor.clear)
         shadowTintStrength = try container.decodeIfPresent(CGFloat.self, forKey: .shadowTintStrength) ?? 0.0
         highlightTintAngle = try container.decodeIfPresent(CGFloat.self, forKey: .highlightTintAngle) ?? 0.0
-        highlightTintColor = try container.decodeIfPresent(CodableColor.self, forKey: .highlightTintColor) ?? CodableColor(color: .clear)
+        highlightTintColor = try container.decodeIfPresent(CodableColor.self, forKey: .highlightTintColor) ?? CodableColor(color: PlatformColor.clear)
         highlightTintStrength = try container.decodeIfPresent(CGFloat.self, forKey: .highlightTintStrength) ?? 0.0
         targetCyanHueRangeCenter = try container.decodeIfPresent(CGFloat.self, forKey: .targetCyanHueRangeCenter) ?? 180.0
         targetCyanHueRangeWidth = try container.decodeIfPresent(CGFloat.self, forKey: .targetCyanHueRangeWidth) ?? 30.0

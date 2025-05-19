@@ -10,28 +10,36 @@ import os.log
 
 struct NoislumeApp: App {
     
-    @StateObject private var settings = AppSettings()
+    @StateObject private var viewModel = InversionViewModel()
+    @StateObject private var appSettings = AppSettings.shared
     
-    init() {
-        // Verify frameworks on startup
-        FrameworkVerifier.verifyFrameworks()
-    }
+    #if os(iOS)
+    @UIApplicationDelegateAdaptor(AppDelegate_iOS.self) var appDelegate
+    #endif
+    
+    @State private var selectedSettingsTab: SettingsTab = .general
     
     var body: some Scene {
+        #if os(iOS)
         WindowGroup {
             ContentView()
+                .environmentObject(viewModel)
+                .environmentObject(appSettings)
         }
+        .commands {
+            AppCommands(viewModel: viewModel)
+        }
+        #endif
+        
         #if os(macOS)
-        // Settings {
-        //     SettingsView(settings: settings)
-        // }
+        // On macOS, AppDelegateMacOS handles the main window.
+        // The Settings scene is defined here, and commands are attached to it.
+        Settings {
+            SettingsView(settings: appSettings, selectedTab: $selectedSettingsTab).environmentObject(appSettings)
+        }
+        .commands {
+            AppCommands(viewModel: viewModel)
+        }
         #endif
     }
-}
-
-extension Notification.Name {
-    static let openFile = Notification.Name("openFile")
-    static let saveFile = Notification.Name("saveFile")
-    static let toggleCrop = Notification.Name("toggleCrop")
-    static let resetAdjustments = Notification.Name("resetAdjustments")
 }

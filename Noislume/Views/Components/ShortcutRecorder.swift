@@ -1,11 +1,17 @@
 import SwiftUI
-import AppKit
+#if os(macOS)
+import AppKit // For NSEvent.ModifierFlags
+#elseif os(iOS)
+import UIKit
+#endif
 
 struct ShortcutRecorder: View {
     let title: String
     @State private var isRecording = false
     @Binding var shortcut: KeyboardShortcutDefinition
+    #if os(macOS)
     @State private var recorderView: KeyRecorderView?
+    #endif
     
     private func formatShortcut(_ shortcut: KeyboardShortcutDefinition) -> String {
         var parts: [String] = []
@@ -26,15 +32,18 @@ struct ShortcutRecorder: View {
             Spacer()
             Button {
                 isRecording.toggle()
+                #if os(macOS)
                 if isRecording {
                     recorderView?.window?.makeFirstResponder(recorderView)
                 }
+                #endif
             } label: {
                 Text(isRecording ? "Recording..." : formatShortcut(shortcut))
                     .frame(width: 100)
                     .foregroundStyle(isRecording ? Color.red : Color.primary)
             }
             .buttonStyle(.bordered)
+            #if os(macOS)
             .background {
                 KeyRecorderRepresentable(
                     isRecording: $isRecording,
@@ -50,15 +59,15 @@ struct ShortcutRecorder: View {
                         
                         // Convert special keys to symbols
                         switch event.keyCode {
-                        case 51: chars = "⌫"  // Delete
-                        case 53: chars = "⎋"  // Escape
-                        case 48: chars = "⇥"  // Tab
-                        case 36: chars = "↩"  // Return
-                        case 76: chars = "⌅"  // Enter
-                        case 123: chars = "←" // Left Arrow
-                        case 124: chars = "→" // Right Arrow
-                        case 126: chars = "↑" // Up Arrow
-                        case 125: chars = "↓" // Down Arrow
+                        case 51: chars = "\u{232B}"  // Delete
+                        case 53: chars = "\u{238B}"  // Escape
+                        case 48: chars = "\u{21E5}"  // Tab
+                        case 36: chars = "\u{21A9}"  // Return
+                        case 76: chars = "\u{2305}"  // Enter
+                        case 123: chars = "\u{2190}" // Left Arrow
+                        case 124: chars = "\u{2192}" // Right Arrow
+                        case 126: chars = "\u{2191}" // Up Arrow
+                        case 125: chars = "\u{2193}" // Down Arrow
                         default: break
                         }
                         
@@ -77,10 +86,12 @@ struct ShortcutRecorder: View {
                     recorderView: $recorderView
                 )
             }
+            #endif
         }
     }
 }
 
+#if os(macOS)
 // NSViewRepresentable wrapper
 struct KeyRecorderRepresentable: NSViewRepresentable {
     @Binding var isRecording: Bool
@@ -123,6 +134,7 @@ class KeyRecorderView: NSView {
     
     override func flagsChanged(with event: NSEvent) {
         guard isRecording else { return }
-        print("Flags changed: \(event.modifierFlags.rawValue)")
+        print("Flags changed: \\(event.modifierFlags.rawValue)")
     }
 }
+#endif

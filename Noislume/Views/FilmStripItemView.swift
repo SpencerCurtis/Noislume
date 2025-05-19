@@ -5,25 +5,32 @@ struct FilmStripItemView: View {
     let imageURL: URL
     let isActive: Bool
     let onSelect: () -> Void
+    
+    @State private var thumbnail: PlatformImage?
 
     var body: some View {
-        // Determine loading state and thumbnail from ViewModel
-        let isLoading = viewModel.isLoadingThumbnail[imageURL] ?? false
-        // Retrieve NSImage using the helper method on ViewModel
-        let nsImage = viewModel.getCachedThumbnail(for: imageURL)
-
         VStack {
             Group {
-                if isLoading {
-                    ProgressView()
-                        .frame(width: 80, height: 60)
-                } else if let thumb = nsImage { // Check for the NSImage
-                    // Convert NSImage to SwiftUI Image
+                if let thumb = thumbnail {
+                    #if os(macOS)
                     Image(nsImage: thumb)
                         .resizable()
                         .aspectRatio(contentMode: .fill)
                         .frame(width: 80, height: 60)
                         .clipped()
+                    #elseif os(iOS)
+                    Image(uiImage: thumb)
+                        .resizable()
+                        .aspectRatio(contentMode: .fill)
+                        .frame(width: 80, height: 60)
+                        .clipped()
+                    #else
+                    // Fallback or error for unsupported platforms
+                    Rectangle()
+                        .fill(Color.red) // Indicate an error or unsupported platform
+                        .frame(width: 80, height: 60)
+                        .overlay(Text("Error").foregroundColor(.white))
+                    #endif
                 } else {
                     // Placeholder if not loading and no thumbnail (e.g., failed or pending queue)
                     Rectangle()
@@ -47,12 +54,19 @@ struct FilmStripItemView: View {
         }
         .padding(.horizontal, 4)
         .onTapGesture {
-            // Allow selection even if thumbnail is loading, main image loading is separate
             onSelect()
         }
         .onAppear {
-            // Request the thumbnail when the view appears
+            // Load the thumbnail when the view appears
+            thumbnail = viewModel.getCachedThumbnail(for: imageURL)
+            // Request the thumbnail if needed
             viewModel.requestThumbnailIfNeeded(for: imageURL)
+        }
+        .onChange(of: viewModel.thumbnailManager.isLoadingThumbnail[imageURL]) { wasLoading, isLoading in
+            // Update the thumbnail when loading state changes to false (finished loading)
+            if wasLoading == true && isLoading == false {
+                thumbnail = viewModel.getCachedThumbnail(for: imageURL)
+            }
         }
     }
 }

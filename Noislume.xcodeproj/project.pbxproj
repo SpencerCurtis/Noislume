@@ -29,9 +29,22 @@
 		46EC7CCC2DC0213F00E4A679 /* NoislumeUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = NoislumeUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		463881452DDADD8500AEB03C /* Exceptions for "Noislume" folder in "Noislume" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			platformFiltersByRelativePath = {
+				main.swift = (macos, );
+			};
+			target = 46EC7CB32DC0213D00E4A679 /* Noislume */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		46EC7CB62DC0213D00E4A679 /* Noislume */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				463881452DDADD8500AEB03C /* Exceptions for "Noislume" folder in "Noislume" target */,
+			);
 			path = Noislume;
 			sourceTree = "<group>";
 		};

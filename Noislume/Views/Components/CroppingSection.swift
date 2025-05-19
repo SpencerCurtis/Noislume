@@ -2,14 +2,13 @@ import SwiftUI
 
 struct CroppingSection: View {
     @ObservedObject var viewModel: InversionViewModel
-    @Binding var isExpanded: Bool
     @Binding var showCropOverlay: Bool
     let onCropReset: () -> Void
     let onImageReset: () -> Void
     let onApplyCrop: () -> Void
     
     var body: some View {
-        CollapsibleSection(isExpanded: $isExpanded, title: "Cropping & Geometry") {
+        CollapsibleSection(sectionKey: "cropping", title: "Cropping & Geometry", defaultExpanded: true) {
             VStack {
                 Toggle("Show Crop Overlay", isOn: $showCropOverlay)
                     .disabled(viewModel.activeURL == nil)

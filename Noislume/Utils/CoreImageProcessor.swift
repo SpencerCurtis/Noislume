@@ -19,6 +19,9 @@ actor CoreImageProcessor {
     private let context: CIContext // For all CIImage rendering
     private let filterQueue = DispatchQueue(label: "com.SpencerCurtis.Noislume.CoreImageFilterQueue", qos: .userInitiated)
 
+    // Cache for prepared RAW images (output of loadAndPrepareRAW)
+    private var preparedImageCache: [String: CIImage] = [:]
+
     static let shared = CoreImageProcessor()
     
     private init() {
@@ -76,7 +79,14 @@ actor CoreImageProcessor {
             PerceptualToneMappingFilter(),
             
             // Color Cast & Hue Refinements (Uncommented)
-            ColorCastAndHueRefinementFilter()
+            ColorCastAndHueRefinementFilter(),
+
+            // Black and White (after color adjustments)
+            BlackAndWhiteFilter(),
+
+            // Add Noise Reduction and Sharpening to V2 chain
+            NoiseReductionFilter(),
+            SharpnessFilter()
         ]
 
         let commonOptions: [CIContextOption: Any] = [
@@ -167,80 +177,170 @@ actor CoreImageProcessor {
         return HistogramData(r: histR, g: histG, b: histB, l: histL)
     }
     
-    func processRAWImage(fileURL: URL, adjustments: ImageAdjustments, mode: ProcessingMode, processUntilFilterOfType: Any.Type? = nil) async throws -> (processedImage: CIImage?, histogramData: HistogramData?) {
-        currentTask?.cancel()
+    // MARK: - Cache Management
+
+    /// Generates a cache key for `loadAndPrepareRAW` based on URL and relevant adjustments.
+    private func generateCacheKey(for fileURL: URL, adjustments: ImageAdjustments, downsampleWidth: CGFloat?) -> String {
+        // Use a stable string representation for CGPoint
+        // let filmBasePointString = adjustments.filmBaseSamplePoint.map { _ in "\\($0.x):\\($0.y)" } ?? "nil" // Unused
+        let key = "\(fileURL.absoluteString)-temp:\(adjustments.temperature)-tint:\(adjustments.tint)-neutralPt:\(adjustments.filmBaseSamplePoint.debugDescription)-downsampleW:\(downsampleWidth ?? -1)"
+        // print("Generated Cache Key: \(key)")
+        return key
+    }
+
+    /// Clears the internal image cache.
+    public func clearCache() {
+        preparedImageCache.removeAll()
+        print("CoreImageProcessor: Prepared image cache cleared.")
+    }
+
+    // MARK: - Core Processing Logic Refactor
+
+    /// Loads a RAW image, applies initial RAW filter settings, and performs optional early downsampling.
+    private func loadAndPrepareRAW(fileURL: URL, adjustments: ImageAdjustments, downsampleWidth: CGFloat? = nil) async -> CIImage? {
+        let cacheKey = generateCacheKey(for: fileURL, adjustments: adjustments, downsampleWidth: downsampleWidth)
         
+        if let cachedImage = preparedImageCache[cacheKey] {
+            return cachedImage
+        }
+
+        guard let rawFilter = CIRAWFilter(imageURL: fileURL) else {
+            print("CoreImageProcessor.loadAndPrepareRAW Error: Failed to create CIRAWFilter for \(fileURL.lastPathComponent).")
+            return nil
+        }
+
+        rawFilter.exposure = 0.0 // Base exposure for RAW decoding
+        rawFilter.boostAmount = 0.0 // For linear output from RAW
+        
+        if let neutralPoint = adjustments.filmBaseSamplePoint, neutralPoint.x.isFinite, neutralPoint.y.isFinite {
+            rawFilter.neutralLocation = neutralPoint
+        } else {
+            rawFilter.neutralTemperature = adjustments.temperature
+            rawFilter.neutralTint = adjustments.tint
+        }
+
+        guard var workingImage = rawFilter.outputImage ?? rawFilter.previewImage else {
+            print("CoreImageProcessor.loadAndPrepareRAW Error: Failed to get image data from CIRAWFilter for \(fileURL.lastPathComponent).")
+            return nil
+        }
+
+        if let targetWidth = downsampleWidth, workingImage.extent.width > targetWidth {
+            let scale = targetWidth / workingImage.extent.width
+            if scale.isFinite && scale > 0 && scale < 1.0 {
+                workingImage = workingImage.transformed(by: .init(scaleX: scale, y: scale)).samplingLinear()
+            }
+        }
+        
+        // Cache the successfully prepared image
+        preparedImageCache[cacheKey] = workingImage
+        
+        return workingImage
+    }
+
+    /// Applies a sequence of filters to a given CIImage.
+    private func applyFilterChain(image: CIImage, adjustments: ImageAdjustments, activeFilters: [ImageFilter], processUntilFilterOfType: Any.Type? = nil) async throws -> CIImage {
+        var currentImage = image
+
+        let filtersToApply: [ImageFilter]
+        if adjustments.applyPostGeometryFilters {
+            filtersToApply = activeFilters
+        } else {
+            // Only apply geometry filters if applyPostGeometryFilters is false
+            filtersToApply = activeFilters.filter {
+                $0 is GeometryFilter ||
+                $0 is PerspectiveCorrectionFilter ||
+                $0 is TransformFilter ||
+                $0 is StraightenFilter
+            }
+        }
+
+        for filter in filtersToApply {
+            try Task.checkCancellation()
+            if let stopType = processUntilFilterOfType, type(of: filter) == stopType {
+                return currentImage
+            }
+            currentImage = filter.apply(to: currentImage, with: adjustments)
+        }
+        return currentImage
+    }
+
+    /// Downsamples a CIImage to a target width using linear sampling.
+    private func downsample(image: CIImage, targetWidth: CGFloat) -> CIImage {
+        if image.extent.width <= targetWidth || targetWidth <= 0 {
+            return image
+        }
+        let scale = targetWidth / image.extent.width
+        guard scale.isFinite, scale > 0 else {
+            return image
+        }
+        return image.transformed(by: .init(scaleX: scale, y: scale)).samplingLinear()
+    }
+
+    // MARK: - Main Processing Function (Refactored Internals)
+    
+    func processRAWImage(fileURL: URL, adjustments: ImageAdjustments, mode: ProcessingMode, processUntilFilterOfType: Any.Type? = nil, downsampleWidth: CGFloat? = nil) async throws -> (processedImage: CIImage?, histogramData: HistogramData?) {
+        
+        currentTask?.cancel() // Cancel any previous ongoing task
+
         let task = Task<(processedImage: CIImage?, histogramData: HistogramData?), Error> {
-            try Task.checkCancellation()
+            let initialDownsampleTarget = downsampleWidth
             
-            guard let rawFilter = CIRAWFilter(imageURL: fileURL) else {
-                // Consider throwing a specific error here
-                print("Error: Failed to create CIRAWFilter for \(fileURL.lastPathComponent)")
+            guard let workingImage = await loadAndPrepareRAW(fileURL: fileURL, adjustments: adjustments, downsampleWidth: initialDownsampleTarget) else {
+                print("CoreImageProcessor.processRAWImage: Failed to load/prepare RAW image.")
                 return (nil, nil)
             }
-            
-            rawFilter.exposure = 0.0 // Base exposure for RAW decoding
-            rawFilter.boostAmount = 0.0 // For linear output from RAW
-            
-            if let neutralPoint = adjustments.filmBaseSamplePoint, neutralPoint.x.isFinite, neutralPoint.y.isFinite {
-                rawFilter.neutralLocation = neutralPoint
-            } else {
-                rawFilter.neutralTemperature = adjustments.temperature
-                rawFilter.neutralTint = adjustments.tint
-            }
-            
             try Task.checkCancellation()
-            
-            guard let initialImage = rawFilter.outputImage ?? rawFilter.previewImage else {
-                print("Error: Failed to get image data from CIRAWFilter for \(fileURL.lastPathComponent)")
-                return (nil, nil)
-            }
-            
-            var processedImageForHistogram: CIImage? = nil
+
+            var processedImage: CIImage?
+            var histogram: HistogramData?
 
             switch mode {
             case .rawOnly:
-                processedImageForHistogram = initialImage
-                // Generate histogram for rawOnly mode
-                let histogram = self.generateHistogram(for: initialImage)
-                return (initialImage, histogram)
+                processedImage = workingImage
+                histogram = self.generateHistogram(for: workingImage)
+
             case .geometryOnly:
                 if let geometryFilter = v2FilterChain.first(where: { $0 is GeometryFilter }) as? GeometryFilter {
-                    let geometryAppliedImage = geometryFilter.applyGeometry(to: initialImage, with: adjustments, applyCrop: false)
+                    let geometryAppliedImage = geometryFilter.applyGeometry(to: workingImage, with: adjustments, applyCrop: false)
                     try Task.checkCancellation()
-                    processedImageForHistogram = geometryAppliedImage
-                    // Generate histogram for geometryOnly mode
-                    let histogram = self.generateHistogram(for: geometryAppliedImage)
-                    return (geometryAppliedImage, histogram)
+                    processedImage = geometryAppliedImage
+                    histogram = self.generateHistogram(for: geometryAppliedImage)
                 } else {
-                    // This case should ideally not be reached if GeometryFilter is always in v2FilterChain
-                    print("Warning: GeometryFilter not found for .geometryOnly mode. Returning raw image.")
-                    processedImageForHistogram = initialImage
-                    let histogram = self.generateHistogram(for: initialImage)
-                    return (initialImage, histogram)
+                    print("CoreImageProcessor.processRAWImage Warning: GeometryFilter not found for .geometryOnly mode. Returning RAW image.")
+                    processedImage = workingImage
+                    histogram = self.generateHistogram(for: workingImage)
                 }
-            case .full:
-                // Continue to full filter chain processing
-                break
-            }
-            
-            var finalImage = initialImage
-            
-            let activeFilterChain = AppSettings.shared.selectedProcessingVersion == .v1 ? self.v1FilterChain : self.v2FilterChain
 
-            for filter in activeFilterChain {
-                if let stopType = processUntilFilterOfType, type(of: filter) == stopType {
-                    // processUntilFilterOfType is only relevant for .full mode, which is implied here.
-                    // Generate histogram for the image up to this point
-                    let histogram = self.generateHistogram(for: finalImage)
-                    return (finalImage, histogram)
-                }
-                finalImage = filter.apply(to: finalImage, with: adjustments)
+            case .full:
+                let activeFilterChain = self.v2FilterChain
+                
+                let fullyProcessedImage = try await self.applyFilterChain(
+                    image: workingImage,
+                    adjustments: adjustments,
+                    activeFilters: activeFilterChain,
+                    processUntilFilterOfType: processUntilFilterOfType
+                )
                 try Task.checkCancellation()
+                processedImage = fullyProcessedImage
+
+                if processUntilFilterOfType != nil {
+                    if let img = processedImage {
+                        histogram = self.generateHistogram(for: img)
+                    }
+                } else if downsampleWidth == nil {
+                    if let img = processedImage {
+                        histogram = self.generateHistogram(for: img)
+                    }
+                }
             }
-            // Generate histogram for the final fully processed image
-            let finalHistogram = self.generateHistogram(for: finalImage)
-            return (finalImage, finalHistogram)
+            
+            if mode == .full, let targetWidth = downsampleWidth, let currentImage = processedImage, currentImage.extent.width > targetWidth {
+                if initialDownsampleTarget == nil {
+                    processedImage = self.downsample(image: currentImage, targetWidth: targetWidth)
+                }
+            }
+
+            return (processedImage, histogram)
         }
         
         self.currentTask = task
@@ -303,36 +403,31 @@ actor CoreImageProcessor {
     ///   - adjustments: Optional `ImageAdjustments` to apply before generating the thumbnail.
     /// - Returns: A `CGImage` for the thumbnail, or `nil` if generation fails.
     func generateThumbnail(from url: URL, targetWidth: CGFloat, adjustments: ImageAdjustments? = nil) async -> CGImage? {
-        if let adjustments = adjustments {
+        guard let baseImage = await loadAndPrepareRAW(fileURL: url, adjustments: adjustments ?? ImageAdjustments(), downsampleWidth: targetWidth * 2) else {
+            print("CoreImageProcessor.generateThumbnail: Failed to load/prepare RAW for thumbnail.")
+            return nil
+        }
+
+        var imageToThumbnail: CIImage = baseImage
+        
+        if let adj = adjustments {
             do {
-                // processRAWImage now returns a tuple, we only need the image for thumbnail
-                let (processedCIImage, _) = try await self.processRAWImage(fileURL: url, adjustments: adjustments, mode: .full, processUntilFilterOfType: nil) 
-                guard let imageToThumbnail = processedCIImage else { return nil } // Ensure image is not nil
-                
-                let scale = targetWidth / imageToThumbnail.extent.width
-                guard scale.isFinite, scale > 0 else { return nil }
-                
-                let scaledImage = imageToThumbnail.transformed(by: CGAffineTransform(scaleX: scale, y: scale)).samplingLinear()
-                let outputRect = CGRect(origin: .zero, size: CGSize(width: targetWidth, height: scaledImage.extent.height))
-                
-                // Use self.context for creating CGImage
-                return self.context.createCGImage(scaledImage, from: outputRect, format: .RGBA8, colorSpace: CGColorSpace(name: CGColorSpace.sRGB)!)
+                let activeFilterChain = self.v2FilterChain
+                imageToThumbnail = try await self.applyFilterChain(image: baseImage, adjustments: adj, activeFilters: activeFilterChain)
             } catch {
-                print("Error generating thumbnail with adjustments: \(error)")
-                return nil
+                print("CoreImageProcessor.generateThumbnail: Error applying filter chain for adjusted thumbnail: \(error)")
             }
         }
         
-        guard let rawFilter = CIRAWFilter(imageURL: url) else { return nil }
-        rawFilter.exposure = 0.1 
-        guard let ciImage = rawFilter.outputImage else { return nil }
-
-        let scale = targetWidth / ciImage.extent.width
-        guard scale.isFinite, scale > 0 else { return nil }
-        let scaledImage = ciImage.transformed(by: CGAffineTransform(scaleX: scale, y: scale)).samplingLinear()
-        let outputRect = CGRect(origin: .zero, size: CGSize(width: targetWidth, height: scaledImage.extent.height))
-        // Use self.context for creating CGImage
-        return self.context.createCGImage(scaledImage, from: outputRect, format: .RGBA8, colorSpace: CGColorSpace(name: CGColorSpace.sRGB)!)
+        let finalScaledImage = self.downsample(image: imageToThumbnail, targetWidth: targetWidth)
+        
+        let outputRect = CGRect(origin: .zero, size: finalScaledImage.extent.size)
+        guard !outputRect.isEmpty, !outputRect.isInfinite else {
+            print("CoreImageProcessor.generateThumbnail: Invalid outputRect for CGImage creation: \(outputRect)")
+            return nil
+        }
+        
+        return self.context.createCGImage(finalScaledImage, from: outputRect, format: .RGBA8, colorSpace: CGColorSpace(name: CGColorSpace.sRGB)!)
     }
 
     func exportToTIFFData(_ image: CIImage) -> Data? {
@@ -376,6 +471,34 @@ actor CoreImageProcessor {
         
         // Create CIColor from Float32 components. These are assumed to be linear.
         return CIColor(red: CGFloat(bitmap[0]), green: CGFloat(bitmap[1]), blue: CGFloat(bitmap[2]), alpha: CGFloat(bitmap[3]))
+    }
+
+    private func processImage(_ image: CIImage, with adjustments: ImageAdjustments) async throws -> CIImage {
+        var processedImage = image
+        
+        // Always use v2 filter chain since we've removed v1
+        let activeFilterChain = self.v2FilterChain
+        
+        // Apply each filter in the chain
+        for filter in activeFilterChain {
+            processedImage = filter.apply(to: processedImage, with: adjustments)
+        }
+        
+        return processedImage
+    }
+
+    private func processThumbnail(_ image: CIImage, with adjustments: ImageAdjustments) async throws -> CIImage {
+        var processedImage = image
+        
+        // Always use v2 filter chain since we've removed v1
+        let activeFilterChain = self.v2FilterChain
+        
+        // Apply each filter in the chain
+        for filter in activeFilterChain {
+            processedImage = filter.apply(to: processedImage, with: adjustments)
+        }
+        
+        return processedImage
     }
 }
 

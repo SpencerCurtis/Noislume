@@ -14,103 +14,115 @@ struct BlackAndWhiteMixerControlsView: View {
                 .font(.headline)
                 .padding(.bottom, 2)
 
-            // isBlackAndWhite Toggle
-            HStack {
-                Text("B&W Mixer")
-                Spacer()
-                Toggle("Enable B&W", isOn: $viewModel.isBlackAndWhite)
-                    .labelsHidden()
-                    .onChange(of: viewModel.isBlackAndWhite) { oldValue, newValue in
-                        // If B&W mode is toggled, reset individual color adjustments to avoid
-                        // unexpected carry-over effects if the user toggles B&W off and on.
-                        if newValue == true && oldValue == false {
-                            viewModel.currentAdjustments.bwRedContribution = 0.299
-                            viewModel.currentAdjustments.bwGreenContribution = 0.587
-                            viewModel.currentAdjustments.bwBlueContribution = 0.114
-                        }
-                        viewModel.objectWillChange.send() // Ensure UI updates
+            // Create a binding to the specific adjustment property
+            let isBlackAndWhiteBinding = Binding<Bool>(
+                get: { viewModel.currentAdjustments.isBlackAndWhite },
+                set: { newValue in
+                    var newAdjustments = viewModel.currentAdjustments
+                    newAdjustments.isBlackAndWhite = newValue
+                    viewModel.currentAdjustments = newAdjustments
+                }
+            )
+
+            Toggle("Enable B&W", isOn: isBlackAndWhiteBinding)
+                .padding(.horizontal)
+                .onChange(of: viewModel.currentAdjustments.isBlackAndWhite) { oldValue, newValue in
+                    if newValue == true && oldValue == false {
+                        var newAdjustments = viewModel.currentAdjustments
+                        // Reset to default contributions when B&W is enabled
+                        newAdjustments.bwRedContribution = 0.299
+                        newAdjustments.bwGreenContribution = 0.587
+                        newAdjustments.bwBlueContribution = 0.114
+                        viewModel.currentAdjustments = newAdjustments
                     }
+                    // viewModel.objectWillChange.send() // Not strictly needed if currentAdjustments setter handles it
+                    print("B&W Toggled: \(newValue)")
+                }
+
+            if viewModel.currentAdjustments.isBlackAndWhite {
+                VStack {
+                    AdjustmentSlider(
+                        value: Binding(
+                            get: { viewModel.currentAdjustments.bwRedContribution },
+                            set: { val in
+                                var newAdjustments = viewModel.currentAdjustments
+                                newAdjustments.bwRedContribution = val
+                                viewModel.currentAdjustments = newAdjustments
+                            }
+                        ),
+                        title: "Red",
+                        range: -1.0...2.0,
+                        isDisabled: !viewModel.currentAdjustments.isBlackAndWhite,
+                        onEditingChanged: nil
+                    )
+
+                    AdjustmentSlider(
+                        value: Binding(
+                            get: { viewModel.currentAdjustments.bwGreenContribution },
+                            set: { val in
+                                var newAdjustments = viewModel.currentAdjustments
+                                newAdjustments.bwGreenContribution = val
+                                viewModel.currentAdjustments = newAdjustments
+                            }
+                        ),
+                        title: "Green",
+                        range: -1.0...2.0,
+                        isDisabled: !viewModel.currentAdjustments.isBlackAndWhite,
+                        onEditingChanged: nil
+                    )
+
+                    AdjustmentSlider(
+                        value: Binding(
+                            get: { viewModel.currentAdjustments.bwBlueContribution },
+                            set: { val in
+                                var newAdjustments = viewModel.currentAdjustments
+                                newAdjustments.bwBlueContribution = val
+                                viewModel.currentAdjustments = newAdjustments
+                            }
+                        ),
+                        title: "Blue",
+                        range: -1.0...2.0,
+                        isDisabled: !viewModel.currentAdjustments.isBlackAndWhite,
+                        onEditingChanged: nil
+                    )
+                    
+                    // Sepia Intensity Slider (can be part of B&W controls)
+                    HStack {
+                        Text("Sepia Tone")
+                        Slider(
+                            value: Binding(
+                                get: { viewModel.currentAdjustments.sepiaIntensity },
+                                set: { newValue in
+                                    var newAdjustments = viewModel.currentAdjustments
+                                    newAdjustments.sepiaIntensity = newValue
+                                    viewModel.currentAdjustments = newAdjustments
+                                }
+                            ),
+                            in: 0...1,
+                            step: 0.01,
+                            onEditingChanged: { editing in
+                                // The binding for sepiaIntensity already triggers processing via currentAdjustments setter.
+                                // No explicit call to processImage() is needed here.
+                                // if !editing {
+                                //     Task { await viewModel.processImage() } 
+                                // }
+                            }
+                        )
+                        TextField("", value: Binding(
+                            get: { viewModel.currentAdjustments.sepiaIntensity },
+                            set: { newValue in
+                                var newAdjustments = viewModel.currentAdjustments
+                                newAdjustments.sepiaIntensity = newValue
+                                viewModel.currentAdjustments = newAdjustments
+                            }
+                        ), formatter: NumberFormatter.decimal(precision: 2))
+                            .textFieldStyle(RoundedBorderTextFieldStyle())
+                            .frame(width: 60)
+                    }
+                    .disabled(!viewModel.currentAdjustments.isBlackAndWhite)
+                }
+                .opacity(viewModel.currentAdjustments.isBlackAndWhite ? 1.0 : 0.5)
             }
-            .padding(.horizontal)
-
-            Group {
-                // Red Contribution Slider
-                HStack {
-                    Text("Red Channel")
-                        .foregroundColor(Color.red)
-                    Slider(
-                        value: $viewModel.bwRedContribution,
-                        in: -1.0...2.0, // Allow negative contributions for effects, and >1 for emphasis
-                        step: 0.01,
-                        onEditingChanged: { editing in
-                            if !editing {
-                                viewModel.triggerImageProcessing()
-                            }
-                        }
-                    )
-                    TextField("", value: $viewModel.bwRedContribution, formatter: NumberFormatter.decimal(precision: 2))
-                        .textFieldStyle(RoundedBorderTextFieldStyle())
-                        .frame(width: 60)
-                }
-
-                // Green Contribution Slider
-                HStack {
-                    Text("Green Channel")
-                        .foregroundColor(Color.green)
-                    Slider(
-                        value: $viewModel.bwGreenContribution,
-                        in: -1.0...2.0,
-                        step: 0.01,
-                        onEditingChanged: { editing in
-                            if !editing {
-                                viewModel.triggerImageProcessing()
-                            }
-                        }
-                    )
-                    TextField("", value: $viewModel.bwGreenContribution, formatter: NumberFormatter.decimal(precision: 2))
-                        .textFieldStyle(RoundedBorderTextFieldStyle())
-                        .frame(width: 60)
-                }
-
-                // Blue Contribution Slider
-                HStack {
-                    Text("Blue Channel")
-                        .foregroundColor(Color.blue)
-                    Slider(
-                        value: $viewModel.bwBlueContribution,
-                        in: -1.0...2.0,
-                        step: 0.01,
-                        onEditingChanged: { editing in
-                            if !editing {
-                                viewModel.triggerImageProcessing()
-                            }
-                        }
-                    )
-                    TextField("", value: $viewModel.bwBlueContribution, formatter: NumberFormatter.decimal(precision: 2))
-                        .textFieldStyle(RoundedBorderTextFieldStyle())
-                        .frame(width: 60)
-                }
-                
-                // Sepia Intensity Slider (can be part of B&W controls)
-                HStack {
-                    Text("Sepia Tone")
-                    Slider(
-                        value: $viewModel.sepiaIntensity,
-                        in: 0...1,
-                        step: 0.01,
-                        onEditingChanged: { editing in
-                            if !editing {
-                                viewModel.triggerImageProcessing()
-                            }
-                        }
-                    )
-                    TextField("", value: $viewModel.sepiaIntensity, formatter: NumberFormatter.decimal(precision: 2))
-                        .textFieldStyle(RoundedBorderTextFieldStyle())
-                        .frame(width: 60)
-                }
-            }
-            .disabled(!viewModel.isBlackAndWhite) // Disable sliders if B&W is not active
-            .opacity(viewModel.isBlackAndWhite ? 1.0 : 0.5) // Visually indicate disabled state
         }
         .padding(.vertical)
     }

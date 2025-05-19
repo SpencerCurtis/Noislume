@@ -1,13 +1,14 @@
 import CoreImage
-import AppKit // Import AppKit for NSColor
+#if os(macOS)
+import AppKit // For NSEvent.ModifierFlags
+#elseif os(iOS)
+import UIKit
+#endif// Import AppKit for NSColor
 
 class ColorCastAndHueRefinementFilter: ImageFilter {
     var category: FilterCategory = .colorAdjustments
 
-    // TODO: Define necessary properties based on ImageAdjustments
-
     func apply(to image: CIImage, with adjustments: ImageAdjustments) -> CIImage {
-        print("ColorCastAndHueRefinementFilter: Applying filter...")
         var currentImage = image
 
         // 1. Midtone Neutralization (Gray-world or similar)
@@ -19,7 +20,6 @@ class ColorCastAndHueRefinementFilter: ImageFilter {
         // 3. Targeted Hue/Saturation Adjustments
         currentImage = applyTargetedHueSaturation(to: currentImage, adjustments: adjustments)
         
-        print("ColorCastAndHueRefinementFilter: Successfully applied filter.")
         return currentImage
     }
 
@@ -29,12 +29,9 @@ class ColorCastAndHueRefinementFilter: ImageFilter {
             return image
         }
 
-        print("ColorCastAndHueRefinementFilter: Applying midtone neutralization (strength: \(adjustments.midtoneNeutralizationStrength)).")
-
         // 1. Get the average color of the image
         let extent = image.extent
         guard !extent.isInfinite, !extent.isEmpty else {
-            print("ColorCastAndHueRefinementFilter: Image extent is invalid. Skipping midtone neutralization.")
             return image
         }
         
@@ -43,7 +40,6 @@ class ColorCastAndHueRefinementFilter: ImageFilter {
         averageColorFilter.extent = extent
         
         guard let averageColorImage = averageColorFilter.outputImage else {
-            print("ColorCastAndHueRefinementFilter: Failed to get average color. Skipping midtone neutralization.")
             return image
         }
 
@@ -71,14 +67,11 @@ class ColorCastAndHueRefinementFilter: ImageFilter {
         avgBlue = CGFloat(bitmap[2]) / 255.0
         // Alpha (bitmap[3]) is not used for average color calculation here
 
-        print("ColorCastAndHueRefinementFilter: Average RGB before neutralization - R: \(avgRed), G: \(avgGreen), B: \(avgBlue)")
-
         // 2. Calculate the overall average luminance of the average color
         // This will be our target gray value for R, G, and B channels
         let overallAverage = (avgRed + avgGreen + avgBlue) / 3.0
         
         guard overallAverage > 0.001 else { // Avoid division by zero or extreme amplification if image is black
-            print("ColorCastAndHueRefinementFilter: Average color is too dark to neutralize. Skipping.")
             return image
         }
 
@@ -86,8 +79,6 @@ class ColorCastAndHueRefinementFilter: ImageFilter {
         let scaleR = overallAverage / avgRed
         let scaleG = overallAverage / avgGreen
         let scaleB = overallAverage / avgBlue
-
-        print("ColorCastAndHueRefinementFilter: Neutralization scales - R: \(scaleR), G: \(scaleG), B: \(scaleB)")
 
         // 4. Apply scaling using CIColorMatrix
         let colorMatrixFilter = CIFilter.colorMatrix()
@@ -99,7 +90,6 @@ class ColorCastAndHueRefinementFilter: ImageFilter {
         colorMatrixFilter.biasVector = CIVector(x: 0, y: 0, z: 0, w: 0) // No bias
 
         guard let neutralizedImage = colorMatrixFilter.outputImage else {
-            print("ColorCastAndHueRefinementFilter: Failed to apply color matrix for neutralization. Returning original image.")
             return image
         }
 
@@ -111,14 +101,11 @@ class ColorCastAndHueRefinementFilter: ImageFilter {
             blendFilter.time = Float(adjustments.midtoneNeutralizationStrength) // Strength = 0 -> original, Strength = 1 -> neutralized.
 
             guard let blendedImage = blendFilter.outputImage else {
-                print("ColorCastAndHueRefinementFilter: Failed to blend neutralized image. Returning fully neutralized image.")
                 return neutralizedImage
             }
-            print("ColorCastAndHueRefinementFilter: Applied midtone neutralization with blending.")
             return blendedImage
         }
         
-        print("ColorCastAndHueRefinementFilter: Applied full midtone neutralization.")
         return neutralizedImage
     }
 
@@ -135,8 +122,6 @@ class ColorCastAndHueRefinementFilter: ImageFilter {
             let shadowB = adjustments.shadowTintColor.ciColor.blue
             let strength = adjustments.shadowTintStrength
             
-            print("ColorCastAndHueRefinementFilter: Applying shadow tint. Color RGB: R:\(shadowR) G:\(shadowG) B:\(shadowB), Strength: \(strength)")
-            
             let rBias = shadowR * strength
             let gBias = shadowG * strength
             let bBias = shadowB * strength
@@ -151,9 +136,6 @@ class ColorCastAndHueRefinementFilter: ImageFilter {
             
             if let tinted = addTintMatrix.outputImage {
                 currentImage = tinted
-                print("ColorCastAndHueRefinementFilter: Applied shadow tint via color matrix addition.")
-            } else {
-                print("ColorCastAndHueRefinementFilter: Failed to apply shadow tint matrix.")
             }
         }
 
@@ -163,9 +145,7 @@ class ColorCastAndHueRefinementFilter: ImageFilter {
             let highlightG = adjustments.highlightTintColor.ciColor.green
             let highlightB = adjustments.highlightTintColor.ciColor.blue
             let strength = adjustments.highlightTintStrength
-            
-            print("ColorCastAndHueRefinementFilter: Applying highlight tint. Color RGB: R:\(highlightR) G:\(highlightG) B:\(highlightB), Strength: \(strength)")
-
+        
             let rBias = highlightR * strength
             let gBias = highlightG * strength
             let bBias = highlightB * strength
@@ -180,9 +160,6 @@ class ColorCastAndHueRefinementFilter: ImageFilter {
 
             if let tinted = addTintMatrix.outputImage {
                 currentImage = tinted
-                print("ColorCastAndHueRefinementFilter: Applied highlight tint via color matrix addition.")
-            } else {
-                print("ColorCastAndHueRefinementFilter: Failed to apply highlight tint matrix.")
             }
         }
         
@@ -199,8 +176,6 @@ class ColorCastAndHueRefinementFilter: ImageFilter {
             return image
         }
         
-        print("ColorCastAndHueRefinementFilter: Applying targeted cyan adjustment. S_adj: \(S_adj), B_adj: \(B_adj)")
-
         let targetHue = adjustments.targetCyanHueRangeCenter / 360.0 // Normalize to 0-1
         let hueWidth = adjustments.targetCyanHueRangeWidth / 360.0   // Normalize to 0-1
 
@@ -222,8 +197,7 @@ class ColorCastAndHueRefinementFilter: ImageFilter {
                     let b_norm = Float(z) / Float(dimension - 1)
 
                     // Convert normalized RGB to HSB
-                    // Using NSColor for conversion
-                    let color = NSColor(srgbRed: CGFloat(r_norm),
+                    let color = PlatformColor(red: CGFloat(r_norm),
                                         green: CGFloat(g_norm),
                                         blue: CGFloat(b_norm),
                                         alpha: 1.0)
@@ -231,8 +205,8 @@ class ColorCastAndHueRefinementFilter: ImageFilter {
                     var hue: CGFloat = 0
                     var saturation: CGFloat = 0
                     var brightness: CGFloat = 0
-                    var alpha: CGFloat = 0
-                    color.getHue(&hue, saturation: &saturation, brightness: &brightness, alpha: &alpha)
+                    var alphaComponent: CGFloat = 0 // Renamed for clarity
+                    color.getHue(&hue, saturation: &saturation, brightness: &brightness, alpha: &alphaComponent)
                     
                     var newR = r_norm
                     var newG = g_norm
@@ -255,19 +229,21 @@ class ColorCastAndHueRefinementFilter: ImageFilter {
                     }
 
                     if hueInRange {
-                        var newSaturation = Float(saturation) + Float(S_adj)
-                        newSaturation = max(0.0, min(1.0, newSaturation))
+                        saturation += CGFloat(S_adj) // Apply saturation adjustment
+                        saturation = max(0.0, min(1.0, saturation)) // Clamp to 0-1
+
+                        brightness += CGFloat(B_adj) // Apply brightness adjustment
+                        brightness = max(0.0, min(1.0, brightness)) // Clamp to 0-1
                         
-                        var newBrightness = Float(brightness) + Float(B_adj)
-                        newBrightness = max(0.0, min(1.0, newBrightness))
+                        // Convert back to RGB
+                        let modifiedColor = PlatformColor(hue: CGFloat(hue), 
+                                                    saturation: CGFloat(saturation), 
+                                                    brightness: CGFloat(brightness), 
+                                                    alpha: 1.0) // alphaComponent from getHue is the original alpha, use 1.0 if new color is opaque
                         
-                        let modifiedColor = NSColor(hue: CGFloat(hue), 
-                                                  saturation: CGFloat(newSaturation), 
-                                                  brightness: CGFloat(newBrightness), 
-                                                  alpha: 1.0)
+                        var nsR: CGFloat = 0, nsG: CGFloat = 0, nsB: CGFloat = 0, nsA: CGFloat = 0 // Added nsA
+                        modifiedColor.getRed(&nsR, green: &nsG, blue: &nsB, alpha: &nsA) // Pass nsA
                         
-                        var nsR: CGFloat = 0, nsG: CGFloat = 0, nsB: CGFloat = 0
-                        modifiedColor.getRed(&nsR, green: &nsG, blue: &nsB, alpha: nil)
                         newR = Float(nsR)
                         newG = Float(nsG)
                         newB = Float(nsB)
@@ -289,15 +265,13 @@ class ColorCastAndHueRefinementFilter: ImageFilter {
         colorCubeFilter.cubeDimension = Float(dimension)
         colorCubeFilter.cubeData = data
         // Important: Specify the color space the cube was generated for. 
-        // Since we used NSColor sRGB initializers and getters, sRGB is appropriate.
+        // Since we used PlatformColor sRGB initializers and getters, sRGB is appropriate.
         colorCubeFilter.colorSpace = CGColorSpace(name: CGColorSpace.sRGB) 
 
         if let outputImage = colorCubeFilter.outputImage {
-            print("ColorCastAndHueRefinementFilter: Applied targeted cyan adjustment with CIColorCube.")
             return outputImage
         }
         
-        print("ColorCastAndHueRefinementFilter: Failed to apply CIColorCube for cyan adjustment. Returning image as is.")
         return image
     }
 } 

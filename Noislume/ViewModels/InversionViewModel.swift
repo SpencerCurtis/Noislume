@@ -719,7 +719,9 @@ class InversionViewModel: ObservableObject {
             newAdjustments.filmBaseColorRed = Float(color.red)
             newAdjustments.filmBaseColorGreen = Float(color.green)
             newAdjustments.filmBaseColorBlue = Float(color.blue)
-            newAdjustments.filmBaseSamplePointColor = color // Also set the transient CIColor for immediate use
+            // Create CIColor from the sampled color components
+            let ciColor = CIColor(red: color.red, green: color.green, blue: color.blue, alpha: color.alpha)
+            newAdjustments.filmBaseSamplePointColor = ciColor // Also set the transient CIColor for immediate use
             currentAdjustments = newAdjustments // This will trigger reprocessing and persistence
             print("Sampled film base color: R:\(color.red), G:\(color.green), B:\(color.blue) at \(point)")
         }

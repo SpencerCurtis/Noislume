@@ -146,45 +146,11 @@ struct ImageAdjustments: Codable {
     
     // MARK: - Film Base Sampling
     var filmBaseSamplePoint: CGPoint?       // User-tapped point
-    private var _filmBaseSamplePointColor: CIColor?  // Private storage for transient color
+    var filmBaseSamplePointColor: CIColor?  // Sampled color for neutralization (transient)
     // NEW Film Base Color components (Codable)
     var filmBaseColorRed: Float?
     var filmBaseColorGreen: Float?
     var filmBaseColorBlue: Float?
-    
-    /// Computed property that creates a CIColor from the individual RGB components
-    /// This allows the FilmBaseNeutralizationFilter to access the sampled color
-    /// even after the app has been restarted (since individual components are Codable)
-    var filmBaseSamplePointColor: CIColor? {
-        get {
-            // If we have a direct CIColor (transient), return it
-            if let existingColor = _filmBaseSamplePointColor {
-                return existingColor
-            }
-            
-            // Otherwise, try to reconstruct from individual components
-            guard let red = filmBaseColorRed,
-                  let green = filmBaseColorGreen,
-                  let blue = filmBaseColorBlue else {
-                return nil
-            }
-            
-            return CIColor(red: CGFloat(red), green: CGFloat(green), blue: CGFloat(blue))
-        }
-        set {
-            // Store both the CIColor (transient) and individual components (persistent)
-            _filmBaseSamplePointColor = newValue
-            if let color = newValue {
-                filmBaseColorRed = Float(color.red)
-                filmBaseColorGreen = Float(color.green)
-                filmBaseColorBlue = Float(color.blue)
-            } else {
-                filmBaseColorRed = nil
-                filmBaseColorGreen = nil
-                filmBaseColorBlue = nil
-            }
-        }
-    }
 
     struct PerspectiveCorrection: Codable {
         var points: [CGPoint]

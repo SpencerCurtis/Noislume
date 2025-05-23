@@ -362,6 +362,14 @@ actor CoreImageProcessor {
         return (CGFloat(bitmap[0]) / 255.0, CGFloat(bitmap[1]) / 255.0, CGFloat(bitmap[2]) / 255.0, CGFloat(bitmap[3]) / 255.0)
     }
 
+    // MARK: - Original RAW Image Access
+    
+    /// Gets the original RAW image after initial RAW processing but before any filters.
+    /// This is useful for color sampling where you need the unprocessed negative.
+    func getOriginalRAWImage(fileURL: URL, adjustments: ImageAdjustments) async -> CIImage? {
+        return await loadAndPrepareRAW(fileURL: fileURL, adjustments: adjustments, downsampleWidth: nil)
+    }
+    
     // MARK: - Thumbnail Generation
     
     /// Generates a thumbnail CGImage from a RAW file URL, optionally applying adjustments.

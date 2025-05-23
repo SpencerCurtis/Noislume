@@ -696,20 +696,26 @@ class InversionViewModel: ObservableObject {
         isSamplingFilmBaseColor = false
 
         Task {
-            // Ensure the point is valid and we have an image
-            guard let ciImage = self.currentImage ?? self.originalImage else {
-                print("No CIImage available for film base sampling.")
+            // Get the original RAW image (before inversion and processing) for accurate film base sampling
+            guard let activeURL = self.activeURL else {
+                print("No active URL available for film base sampling.")
+                return
+            }
+            
+            // Get the original RAW image before any processing filters
+            guard let originalRAWImage = await processor.getOriginalRAWImage(fileURL: activeURL, adjustments: currentAdjustments) else {
+                print("Failed to get original RAW image for film base sampling.")
                 return
             }
             
             // For accurate sampling, the view's frame containing the image is needed.
-            let placeholderImageFrameInView = CGRect(origin: .zero, size: ciImage.extent.size) 
+            let placeholderImageFrameInView = CGRect(origin: .zero, size: originalRAWImage.extent.size) 
 
-            // No try needed as sampleColor is not marked throws. Errors handled internally or by nil return.
-            let sampledCIColor = await processor.sampleColor(from: ciImage, 
+            // Sample from the original RAW image (unprocessed negative)
+            let sampledCIColor = await processor.sampleColor(from: originalRAWImage, 
                                                              atViewPoint: point, 
                                                              activeImageFrameInView: placeholderImageFrameInView, 
-                                                             imageExtentForSampling: ciImage.extent)
+                                                             imageExtentForSampling: originalRAWImage.extent)
             guard let color = sampledCIColor else {
                 print("Film base sampling returned nil color.")
                 return
@@ -723,7 +729,7 @@ class InversionViewModel: ObservableObject {
             let ciColor = CIColor(red: color.red, green: color.green, blue: color.blue, alpha: color.alpha)
             newAdjustments.filmBaseSamplePointColor = ciColor // Also set the transient CIColor for immediate use
             currentAdjustments = newAdjustments // This will trigger reprocessing and persistence
-            print("Sampled film base color: R:\(color.red), G:\(color.green), B:\(color.blue) at \(point)")
+            print("Sampled film base color from original RAW: R:\(color.red), G:\(color.green), B:\(color.blue) at \(point)")
         }
     }
 
@@ -734,7 +740,7 @@ class InversionViewModel: ObservableObject {
         
         Task {
              // Ensure the point is valid and we have an image
-            guard let ciImage = self.currentImage ?? self.originalImage else {
+            guard let ciImage = self.currentImageModel.processedImage else {
                 print("No CIImage available for white balance sampling.")
                 return
             }

@@ -44,6 +44,7 @@
 
 ## Version control
 - Unless otherwise specified, use "git add ." to add all changed files, and write a clear and concise commit message (no newlines) for all changes. Write a title summarizing the changes, and you may use bullet points for more description if you feel it is necessary
+- Do not commit code unless explicitly instructed to do so.
 
 # Project Overview & Key Components (Learned by AI Assistant)
 

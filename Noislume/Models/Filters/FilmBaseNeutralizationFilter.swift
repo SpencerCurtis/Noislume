@@ -5,13 +5,21 @@ class FilmBaseNeutralizationFilter: ImageFilter {
     var category: FilterCategory = .filmBase
 
     func apply(to image: CIImage, with adjustments: ImageAdjustments) -> CIImage {
-        guard let originalFilmBaseCIColor = adjustments.filmBaseSamplePointColor else {
+        // Try to get the film base color either from the transient property or reconstructed from components
+        let originalFilmBaseCIColor = adjustments.filmBaseSamplePointColor ?? adjustments.reconstructedFilmBaseSamplePointColor
+        
+        guard let filmBaseColor = originalFilmBaseCIColor else {
             print("FilmBaseNeutralizationFilter: No film base color provided, returning image as is.")
+            print("  - filmBaseColorRed: \(adjustments.filmBaseColorRed?.description ?? "nil")")
+            print("  - filmBaseColorGreen: \(adjustments.filmBaseColorGreen?.description ?? "nil")")
+            print("  - filmBaseColorBlue: \(adjustments.filmBaseColorBlue?.description ?? "nil")")
             return image
         }
+        
+        print("FilmBaseNeutralizationFilter: Applying neutralization with color R:\(filmBaseColor.red), G:\(filmBaseColor.green), B:\(filmBaseColor.blue)")
 
         // Convert the CIColor to CGColor, then to linear sRGB space to get linear components
-        let cgFilmBaseColor = CGColor(red: originalFilmBaseCIColor.red, green: originalFilmBaseCIColor.green, blue: originalFilmBaseCIColor.blue, alpha: originalFilmBaseCIColor.alpha) // CIColor to CGColor
+        let cgFilmBaseColor = CGColor(red: filmBaseColor.red, green: filmBaseColor.green, blue: filmBaseColor.blue, alpha: filmBaseColor.alpha) // CIColor to CGColor
         
         guard let linearSRGBSpace = CGColorSpace(name: CGColorSpace.linearSRGB) else {
             print("FilmBaseNeutralizationFilter: Could not create linearSRGB color space. Returning image as is.")

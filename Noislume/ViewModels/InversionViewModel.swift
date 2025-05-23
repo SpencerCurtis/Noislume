@@ -439,7 +439,7 @@ class InversionViewModel: ObservableObject {
         if self.isCroppingPreviewActive {
             currentProcessingMode = .geometryOnly
         } else if self.isSamplingFilmBase { 
-            currentProcessingMode = .rawOnly
+            currentProcessingMode = .geometryOnly
         } else {
             currentProcessingMode = .full
         }

@@ -13,8 +13,7 @@ enum ProcessingMode {
 actor CoreImageProcessor {
     private var currentTask: Task<(processedImage: CIImage?, histogramData: HistogramData?), Error>?
     
-    private let v1FilterChain: [ImageFilter] // Renamed from filterChain
-    private let v2FilterChain: [ImageFilter] // New for V2
+    private let filterChain: [ImageFilter] // New for V2
 
     private let context: CIContext // For all CIImage rendering
     private let filterQueue = DispatchQueue(label: "com.SpencerCurtis.Noislume.CoreImageFilterQueue", qos: .userInitiated)
@@ -25,36 +24,7 @@ actor CoreImageProcessor {
     static let shared = CoreImageProcessor()
     
     private init() {
-        // V1 Filter Chain (current logic)
-        self.v1FilterChain = [
-            // Geometry first (before inversion)
-            PerspectiveCorrectionFilter(),
-            CropFilter(),
-            TransformFilter(),
-            StraightenFilter(),
-            
-            // Inversion after geometry
-            InversionFilter(),
-            
-            // Exposure adjustment after inversion
-            ExposureAdjustFilter(),
-            
-            // Tone & Contrast after inversion
-            BasicToneFilter(),
-            ToneCurveFilter(),
-            HighlightShadowFilter(),
-            GammaFilter(),
-            
-            // Positive Color Grading (after Tone & Contrast, before B&W)
-            PositiveColorGradeFilter(),
-            
-            // Black and White (now after positive color grading)
-            BlackAndWhiteFilter()
-        ]
-
-        // V2 Filter Chain (initially empty or a simple pass-through)
-        // For now, let's make it empty. You can add V2 specific filters here later.
-        self.v2FilterChain = [
+        self.filterChain = [
             // Geometry first
             GeometryFilter(),
             PerspectiveCorrectionFilter(),
@@ -250,7 +220,8 @@ actor CoreImageProcessor {
                 $0 is GeometryFilter ||
                 $0 is PerspectiveCorrectionFilter ||
                 $0 is TransformFilter ||
-                $0 is StraightenFilter
+                $0 is StraightenFilter ||
+                $0 is FilmBaseNeutralizationFilter
             }
         }
 
@@ -300,7 +271,7 @@ actor CoreImageProcessor {
                 histogram = self.generateHistogram(for: workingImage)
 
             case .geometryOnly:
-                if let geometryFilter = v2FilterChain.first(where: { $0 is GeometryFilter }) as? GeometryFilter {
+                if let geometryFilter = filterChain.first(where: { $0 is GeometryFilter }) as? GeometryFilter {
                     let geometryAppliedImage = geometryFilter.applyGeometry(to: workingImage, with: adjustments, applyCrop: false)
                     try Task.checkCancellation()
                     processedImage = geometryAppliedImage
@@ -312,12 +283,10 @@ actor CoreImageProcessor {
                 }
 
             case .full:
-                let activeFilterChain = self.v2FilterChain
-                
                 let fullyProcessedImage = try await self.applyFilterChain(
                     image: workingImage,
                     adjustments: adjustments,
-                    activeFilters: activeFilterChain,
+                    activeFilters: filterChain,
                     processUntilFilterOfType: processUntilFilterOfType
                 )
                 try Task.checkCancellation()
@@ -412,8 +381,7 @@ actor CoreImageProcessor {
         
         if let adj = adjustments {
             do {
-                let activeFilterChain = self.v2FilterChain
-                imageToThumbnail = try await self.applyFilterChain(image: baseImage, adjustments: adj, activeFilters: activeFilterChain)
+                imageToThumbnail = try await self.applyFilterChain(image: baseImage, adjustments: adj, activeFilters: filterChain)
             } catch {
                 print("CoreImageProcessor.generateThumbnail: Error applying filter chain for adjusted thumbnail: \(error)")
             }
@@ -476,11 +444,8 @@ actor CoreImageProcessor {
     private func processImage(_ image: CIImage, with adjustments: ImageAdjustments) async throws -> CIImage {
         var processedImage = image
         
-        // Always use v2 filter chain since we've removed v1
-        let activeFilterChain = self.v2FilterChain
-        
         // Apply each filter in the chain
-        for filter in activeFilterChain {
+        for filter in filterChain {
             processedImage = filter.apply(to: processedImage, with: adjustments)
         }
         
@@ -489,12 +454,9 @@ actor CoreImageProcessor {
 
     private func processThumbnail(_ image: CIImage, with adjustments: ImageAdjustments) async throws -> CIImage {
         var processedImage = image
-        
-        // Always use v2 filter chain since we've removed v1
-        let activeFilterChain = self.v2FilterChain
-        
+    
         // Apply each filter in the chain
-        for filter in activeFilterChain {
+        for filter in filterChain {
             processedImage = filter.apply(to: processedImage, with: adjustments)
         }
         

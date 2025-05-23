@@ -282,6 +282,7 @@ struct ImageAdjustments: Codable {
         targetCyanHueRangeWidth = 30.0
         targetCyanSaturationAdjustment = 0.0
         targetCyanBrightnessAdjustment = 0.0
+        applyPostGeometryFilters = true
     }
     
     mutating func resetExposureContrast() {
@@ -351,6 +352,7 @@ struct ImageAdjustments: Codable {
         case shadowTintAngle, shadowTintColor, shadowTintStrength
         case highlightTintAngle, highlightTintColor, highlightTintStrength
         case targetCyanHueRangeCenter, targetCyanHueRangeWidth, targetCyanSaturationAdjustment, targetCyanBrightnessAdjustment
+        case applyPostGeometryFilters
         // Transient properties like whiteBalanceSampledColor, poly... are not included
     }
     
@@ -435,6 +437,7 @@ struct ImageAdjustments: Codable {
         try container.encode(targetCyanHueRangeWidth, forKey: .targetCyanHueRangeWidth)
         try container.encode(targetCyanSaturationAdjustment, forKey: .targetCyanSaturationAdjustment)
         try container.encode(targetCyanBrightnessAdjustment, forKey: .targetCyanBrightnessAdjustment)
+        try container.encode(applyPostGeometryFilters, forKey: .applyPostGeometryFilters)
     }
     
     public init(from decoder: Decoder) throws {
@@ -507,6 +510,7 @@ struct ImageAdjustments: Codable {
         targetCyanHueRangeWidth = try container.decodeIfPresent(CGFloat.self, forKey: .targetCyanHueRangeWidth) ?? 30.0
         targetCyanSaturationAdjustment = try container.decodeIfPresent(CGFloat.self, forKey: .targetCyanSaturationAdjustment) ?? 0.0
         targetCyanBrightnessAdjustment = try container.decodeIfPresent(CGFloat.self, forKey: .targetCyanBrightnessAdjustment) ?? 0.0
+        applyPostGeometryFilters = try container.decodeIfPresent(Bool.self, forKey: .applyPostGeometryFilters) ?? true
         
         // Initialize transient properties not part of Codable
         polyRedLinear = 1.15

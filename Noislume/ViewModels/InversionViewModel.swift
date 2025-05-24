@@ -439,7 +439,7 @@ class InversionViewModel: ObservableObject {
         if self.isCroppingPreviewActive {
             currentProcessingMode = .geometryOnly
         } else if self.isSamplingFilmBase { 
-            currentProcessingMode = .geometryOnly
+            currentProcessingMode = .filmBaseSampling
         } else {
             currentProcessingMode = .full
         }
@@ -691,46 +691,167 @@ class InversionViewModel: ObservableObject {
     
     // MARK: - Film Base Color Sampling
     @MainActor // Ensure UI updates are on main thread
-    func sampleFilmBaseColor(at point: CGPoint, in imageSize: CGSize) async { // Added async
-        isSamplingFilmBase = false // Turn off UI sampling mode immediately
-        isSamplingFilmBaseColor = false
+    func sampleFilmBaseColor(at point: CGPoint, in imageSize: CGSize, imageFrame: CGRect) async { // Added async
+        // Keep sampling mode active during the actual sampling operation
+        isSamplingFilmBaseColor = false // Turn off UI picker mode, but keep image in sampling state
 
         Task {
-            // Get the original RAW image (before inversion and processing) for accurate film base sampling
+            // Get the active URL for sampling
             guard let activeURL = self.activeURL else {
                 print("No active URL available for film base sampling.")
                 return
             }
             
-            // Get the original RAW image before any processing filters
-            guard let originalRAWImage = await processor.getOriginalRAWImage(fileURL: activeURL, adjustments: currentAdjustments) else {
-                print("Failed to get original RAW image for film base sampling.")
+            // Get a fresh filmBaseSampling image directly from the processor to ensure we're sampling from the right image
+            print("🔄 Processing fresh filmBaseSampling image for color sampling...")
+            do {
+                let samplingResult = try await processor.processRAWImage(
+                    fileURL: activeURL,
+                    adjustments: currentAdjustments,
+                    mode: .filmBaseSampling,
+                    processUntilFilterOfType: nil,
+                    downsampleWidth: nil
+                )
+                
+                guard let filmBaseSamplingImage = samplingResult.processedImage else {
+                    print("❌ Failed to get filmBaseSampling image for color sampling.")
+                    return
+                }
+                
+                print("📍 Sampling from fresh filmBaseSampling image")
+                print("   - Image extent: \(filmBaseSamplingImage.extent)")
+                print("   - Tap point: \(point)")
+                
+                // Sample directly from the filmBaseSampling image using the correct coordinate system
+                print("📐 Using correct coordinate system:")
+                print("   - imageFrame (view coordinates): \(imageFrame)")
+                print("   - filmBaseSamplingImage.extent: \(filmBaseSamplingImage.extent)")
+                let sampledCIColor = await processor.sampleColor(from: filmBaseSamplingImage, 
+                                                                 atViewPoint: point, 
+                                                                 activeImageFrameInView: imageFrame, 
+                                                                 imageExtentForSampling: filmBaseSamplingImage.extent)
+                
+                guard let color = sampledCIColor else {
+                    print("Film base sampling returned nil color.")
+                    return
+                }
+                
+                // Process the sampled color...
+                await self.processSampledFilmBaseColor(color, at: point)
+                
+            } catch {
+                print("❌ Error processing filmBaseSampling image for color sampling: \(error)")
                 return
             }
-            
-            // For accurate sampling, the view's frame containing the image is needed.
-            let placeholderImageFrameInView = CGRect(origin: .zero, size: originalRAWImage.extent.size) 
-
-            // Sample from the original RAW image (unprocessed negative)
-            let sampledCIColor = await processor.sampleColor(from: originalRAWImage, 
-                                                             atViewPoint: point, 
-                                                             activeImageFrameInView: placeholderImageFrameInView, 
-                                                             imageExtentForSampling: originalRAWImage.extent)
-            guard let color = sampledCIColor else {
-                print("Film base sampling returned nil color.")
-                return
-            }
-            var newAdjustments = currentAdjustments
-            newAdjustments.filmBaseSamplePoint = point // Store original tap point
-            newAdjustments.filmBaseColorRed = Float(color.red)
-            newAdjustments.filmBaseColorGreen = Float(color.green)
-            newAdjustments.filmBaseColorBlue = Float(color.blue)
-            // Create CIColor from the sampled color components
-            let ciColor = CIColor(red: color.red, green: color.green, blue: color.blue, alpha: color.alpha)
-            newAdjustments.filmBaseSamplePointColor = ciColor // Also set the transient CIColor for immediate use
-            currentAdjustments = newAdjustments // This will trigger reprocessing and persistence
-            print("Sampled film base color from original RAW: R:\(color.red), G:\(color.green), B:\(color.blue) at \(point)")
         }
+    }
+    
+    @MainActor
+    private func processSampledFilmBaseColor(_ color: (red: CGFloat, green: CGFloat, blue: CGFloat, alpha: CGFloat), at point: CGPoint) async {
+        // Basic sanity check - only reject if alpha is 0 (completely transparent)
+        if color.alpha <= 0.0 {
+            print("🚫 Film base sample rejected: Transparent area (alpha: \(color.alpha))")
+            print("💡 Try clicking on a visible area of the film base")
+            return
+        }
+        
+        print("✅ Film base sample accepted from any visible area")
+        print("🎨 SAMPLED COLOR VALUES:")
+        print("  Red: \(color.red)")
+        print("  Green: \(color.green)")  
+        print("  Blue: \(color.blue)")
+        print("  Alpha: \(color.alpha)")
+        print("🔍 If you clicked on ORANGE film base, these values should show high red/green, low blue")
+        print("🔍 If blue is high and red/green are low, then we're sampling from inverted image!")
+        
+        // Clear any existing film base sample to avoid stacking
+        var newAdjustments = currentAdjustments
+        
+        // Log the current state before clearing
+        print("🔍 BEFORE CLEARING - Current film base state:")
+        print("  filmBaseColorRed: \(newAdjustments.filmBaseColorRed?.description ?? "nil")")
+        print("  filmBaseColorGreen: \(newAdjustments.filmBaseColorGreen?.description ?? "nil")")
+        print("  filmBaseColorBlue: \(newAdjustments.filmBaseColorBlue?.description ?? "nil")")
+        print("  filmBaseSamplePointColor: \(newAdjustments.filmBaseSamplePointColor?.description ?? "nil")")
+        
+        newAdjustments.filmBaseSamplePoint = nil
+        newAdjustments.filmBaseSamplePointColor = nil
+        newAdjustments.filmBaseColorRed = nil
+        newAdjustments.filmBaseColorGreen = nil
+        newAdjustments.filmBaseColorBlue = nil
+        
+        print("🧹 AFTER CLEARING - Film base values should be nil:")
+        print("  filmBaseColorRed: \(newAdjustments.filmBaseColorRed?.description ?? "nil")")
+        print("  filmBaseColorGreen: \(newAdjustments.filmBaseColorGreen?.description ?? "nil")")
+        print("  filmBaseColorBlue: \(newAdjustments.filmBaseColorBlue?.description ?? "nil")")
+        print("  filmBaseSamplePointColor: \(newAdjustments.filmBaseSamplePointColor?.description ?? "nil")")
+        
+        // Force a processing cycle with cleared values first
+        print("🔄 Applying CLEARED adjustments to reset film base neutralization...")
+        currentAdjustments = newAdjustments
+        
+        // Wait a moment for processing to complete
+        do {
+            try await Task.sleep(for: .milliseconds(100))
+        } catch {
+            print("Sleep interrupted: \(error)")
+        }
+        
+        // Now set the new sample
+        newAdjustments = currentAdjustments // Get fresh adjustments after clearing
+        newAdjustments.filmBaseSamplePoint = point // Store original tap point (in displayed coordinates)
+        newAdjustments.filmBaseColorRed = Float(color.red)
+        newAdjustments.filmBaseColorGreen = Float(color.green)
+        newAdjustments.filmBaseColorBlue = Float(color.blue)
+        // Create CIColor from the sampled color components using sRGB color space to match the preview
+        let ciColor = CIColor(red: color.red, green: color.green, blue: color.blue, alpha: color.alpha, colorSpace: CGColorSpace(name: CGColorSpace.sRGB)!)
+        newAdjustments.filmBaseSamplePointColor = ciColor // Also set the transient CIColor for immediate use
+        
+        print("🎯 SETTING NEW SAMPLE:")
+        print("  New filmBaseColorRed: \(newAdjustments.filmBaseColorRed?.description ?? "nil")")
+        print("  New filmBaseColorGreen: \(newAdjustments.filmBaseColorGreen?.description ?? "nil")")
+        print("  New filmBaseColorBlue: \(newAdjustments.filmBaseColorBlue?.description ?? "nil")")
+        print("  New filmBaseSamplePointColor: \(newAdjustments.filmBaseSamplePointColor?.description ?? "nil")")
+        
+        currentAdjustments = newAdjustments // This will trigger reprocessing and persistence
+        print("✅ Sampled film base color from fresh filmBaseSampling image: R:\(color.red), G:\(color.green), B:\(color.blue) at coordinates: \(point)")
+        
+        // Now that sampling is complete, exit sampling mode
+        isSamplingFilmBase = false
+    }
+    
+    /// Transforms tap coordinates from the displayed (geometry-processed) image back to the original RAW image coordinates
+    private func transformCoordinatesFromDisplayedToOriginal(
+        tapPoint: CGPoint,
+        displayedImageExtent: CGRect,
+        originalImageExtent: CGRect,
+        adjustments: ImageAdjustments
+    ) -> CGPoint {
+        // For now, implement a simple proportional mapping
+        // This assumes the displayed image is a scaled/transformed version of the original
+        // More sophisticated coordinate transformation would account for:
+        // - Rotation (rotationAngle, straightenAngle)
+        // - Mirroring (isMirroredHorizontally, isMirroredVertically) 
+        // - Cropping (cropRect)
+        // - Scaling (scale)
+        
+        // Simple proportional mapping as starting point:
+        let xRatio = originalImageExtent.width / displayedImageExtent.width
+        let yRatio = originalImageExtent.height / displayedImageExtent.height
+        
+        let transformedX = tapPoint.x * xRatio
+        let transformedY = tapPoint.y * yRatio
+        
+        let transformedPoint = CGPoint(
+            x: transformedX + originalImageExtent.origin.x,
+            y: transformedY + originalImageExtent.origin.y
+        )
+        
+        print("Coordinate transform: tap(\(tapPoint)) -> original(\(transformedPoint))")
+        print("  Displayed extent: \(displayedImageExtent)")
+        print("  Original extent: \(originalImageExtent)")
+        
+        return transformedPoint
     }
 
     // MARK: - White Balance Color Sampling
@@ -890,6 +1011,41 @@ class InversionViewModel: ObservableObject {
         newAdjustments.filmBaseColorBlue = nil
         currentAdjustments = newAdjustments
         print("InversionViewModel: Film base sample cleared for active image.")
+    }
+    
+    /// Samples a color from the current film base sampling image for cursor preview
+    /// This is a non-persistent sampling used only for preview purposes
+    func sampleColorForPreview(at point: CGPoint, imageFrame: CGRect) async -> (red: CGFloat, green: CGFloat, blue: CGFloat, alpha: CGFloat)? {
+        guard let activeURL = activeURL else { return nil }
+        
+        do {
+            // Get the filmBaseSampling image (the negative without inversion)
+            let samplingResult = try await processor.processRAWImage(
+                fileURL: activeURL,
+                adjustments: currentAdjustments,
+                mode: .filmBaseSampling,
+                processUntilFilterOfType: nil,
+                downsampleWidth: nil
+            )
+            
+            guard let filmBaseSamplingImage = samplingResult.processedImage else {
+                return nil
+            }
+            
+            // Sample the color at the point
+            let sampledColor = await processor.sampleColor(
+                from: filmBaseSamplingImage,
+                atViewPoint: point,
+                activeImageFrameInView: imageFrame,
+                imageExtentForSampling: filmBaseSamplingImage.extent
+            )
+            
+            return sampledColor
+            
+        } catch {
+            print("InversionViewModel.sampleColorForPreview: Error sampling color: \(error)")
+            return nil
+        }
     }
 
     func clearWhiteBalanceSample() {

@@ -46,6 +46,7 @@ struct CroppingView: View {
     @State private var showHandles = true
     #if os(macOS)
     @State var currentCursor: NSCursor = .arrow
+    @State private var cursorPosition: CGPoint = .zero
     #endif
 
     private let cropCoordinateSpaceName = "CropCoordinateSpace"
@@ -173,8 +174,15 @@ struct CroppingView: View {
                 self.lastUsedCIImageForRender = currentCIImage
             }
             let imageContentSize = CGSize(width: currentCIImage.extent.width, height: currentCIImage.extent.height)
-            self.activeImageFrame = AVMakeRect(aspectRatio: imageContentSize, insideRect: CGRect(origin: .zero, size: geometrySize))
+            let newActiveImageFrame = AVMakeRect(aspectRatio: imageContentSize, insideRect: CGRect(origin: .zero, size: geometrySize))
+            if newActiveImageFrame != self.activeImageFrame {
+                print("🖼️ activeImageFrame updated: \(self.activeImageFrame) -> \(newActiveImageFrame)")
+                self.activeImageFrame = newActiveImageFrame
+            }
         } else {
+            if self.activeImageFrame != .zero {
+                print("🖼️ activeImageFrame cleared: \(self.activeImageFrame) -> .zero")
+            }
             self.renderedSwiftUIImage = nil
             self.lastUsedCIImageForRender = nil
             self.activeImageFrame = .zero
@@ -324,6 +332,15 @@ struct CroppingView: View {
                     }
                 }
                 
+                #if os(macOS)
+                // Film base cursor preview
+                FilmBaseCursorPreview(
+                    viewModel: viewModel,
+                    cursorPosition: cursorPosition,
+                    imageFrame: activeImageFrame
+                )
+                #endif
+                
             } else if viewModel.isInitiallyLoadingImage || viewModel.isProcessing {
                 ProgressView()
                     .scaleEffect(1.5)
@@ -427,6 +444,10 @@ struct CroppingView: View {
             switch phase {
             case .active(let location):
                 updateHoverStates(at: location, viewSize: geometryProxy.size)
+                
+                // Also update cursor position for film base preview
+                self.cursorPosition = location
+                
                 #if os(macOS)
                 macOS_updateContinuousHoverCursor(location: location, viewSize: geometryProxy.size)
                 #endif
@@ -472,10 +493,19 @@ struct CroppingView: View {
             .contentShape(Rectangle())
             .onTapGesture { locationOfTap in
                 if self.viewModel.isSamplingFilmBase {
-                    print("CroppingView: Tapped for film base sample at \\(String(describing: locationOfTap)) in view size \\(geo.size)")
-                    self.displayedSamplePoint = locationOfTap
+                    // Transform tap coordinates from image view space to container geometry space
+                    let containerSpaceTap = CGPoint(
+                        x: locationOfTap.x + self.activeImageFrame.origin.x,
+                        y: locationOfTap.y + self.activeImageFrame.origin.y
+                    )
+                    print("CroppingView: Tapped for film base sample")
+                    print("  - locationOfTap (image view space): \(locationOfTap)")
+                    print("  - activeImageFrame: \(self.activeImageFrame)")
+                    print("  - containerSpaceTap: \(containerSpaceTap)")
+                    print("  - geo.size: \(geo.size)")
+                    self.displayedSamplePoint = containerSpaceTap
                     Task {
-                        await self.viewModel.sampleFilmBaseColor(at: locationOfTap, in: geo.size)
+                        await self.viewModel.sampleFilmBaseColor(at: containerSpaceTap, in: geo.size, imageFrame: self.activeImageFrame)
                     }
                 } else if self.showCropOverlay {
                     let allSelected = self.selectedCorners.count == 4
@@ -490,6 +520,7 @@ struct CroppingView: View {
                     NSCursor.arrow.set()
                 }
             }
+
             #endif
             .gesture(
                 DragGesture(minimumDistance: 0, coordinateSpace: .named(self.cropCoordinateSpaceName))

@@ -8,6 +8,7 @@ enum ProcessingMode {
     case full             // Apply all filters in the selected chain (V1 or V2)
     case rawOnly          // Apply only the initial CIRAWFilter processing (no additional filters)
     case geometryOnly     // Apply only CIRAWFilter and then GeometryFilter (without its crop part)
+    case filmBaseSampling // Apply geometry filters but exclude FilmBaseNeutralizationFilter for accurate sampling
 }
 
 actor CoreImageProcessor {
@@ -207,8 +208,47 @@ actor CoreImageProcessor {
         return workingImage
     }
 
+    /// Loads a completely neutral RAW image without any adjustments - used for film base sampling.
+    /// This ensures we get the true film base color without any previous corrections applied.
+    private func loadNeutralRAW(fileURL: URL, downsampleWidth: CGFloat? = nil) async -> CIImage? {
+        let cacheKey = "neutral-\(fileURL.absoluteString)-downsampleW:\(downsampleWidth ?? -1)"
+        
+        if let cachedImage = preparedImageCache[cacheKey] {
+            return cachedImage
+        }
+
+        guard let rawFilter = CIRAWFilter(imageURL: fileURL) else {
+            print("CoreImageProcessor.loadNeutralRAW Error: Failed to create CIRAWFilter for \(fileURL.lastPathComponent).")
+            return nil
+        }
+
+        // Apply completely neutral settings for true film base color
+        rawFilter.exposure = 0.0 // Base exposure for RAW decoding
+        rawFilter.boostAmount = 0.0 // For linear output from RAW
+        rawFilter.neutralTemperature = 6500.0 // Standard daylight neutral temperature
+        rawFilter.neutralTint = 0.0 // No tint adjustment
+
+        guard var workingImage = rawFilter.outputImage ?? rawFilter.previewImage else {
+            print("CoreImageProcessor.loadNeutralRAW Error: Failed to get image data from CIRAWFilter for \(fileURL.lastPathComponent).")
+            return nil
+        }
+
+        if let targetWidth = downsampleWidth, workingImage.extent.width > targetWidth {
+            let scale = targetWidth / workingImage.extent.width
+            if scale.isFinite && scale > 0 && scale < 1.0 {
+                workingImage = workingImage.transformed(by: .init(scaleX: scale, y: scale)).samplingLinear()
+            }
+        }
+        
+        // Cache the neutral image
+        preparedImageCache[cacheKey] = workingImage
+        print("CoreImageProcessor.loadNeutralRAW: Created neutral RAW image for film base sampling")
+        
+        return workingImage
+    }
+
     /// Applies a sequence of filters to a given CIImage.
-    private func applyFilterChain(image: CIImage, adjustments: ImageAdjustments, activeFilters: [ImageFilter], processUntilFilterOfType: Any.Type? = nil) async throws -> CIImage {
+    private func applyFilterChain(image: CIImage, adjustments: ImageAdjustments, activeFilters: [ImageFilter], processUntilFilterOfType: Any.Type? = nil, excludeFilmBaseNeutralization: Bool = false) async throws -> CIImage {
         var currentImage = image
 
         let filtersToApply: [ImageFilter]
@@ -221,7 +261,7 @@ actor CoreImageProcessor {
                 $0 is PerspectiveCorrectionFilter ||
                 $0 is TransformFilter ||
                 $0 is StraightenFilter ||
-                $0 is FilmBaseNeutralizationFilter
+                (!excludeFilmBaseNeutralization && $0 is FilmBaseNeutralizationFilter)
             }
         }
 
@@ -280,6 +320,30 @@ actor CoreImageProcessor {
                     print("CoreImageProcessor.processRAWImage Warning: GeometryFilter not found for .geometryOnly mode. Returning RAW image.")
                     processedImage = workingImage
                     histogram = self.generateHistogram(for: workingImage)
+                }
+
+            case .filmBaseSampling:
+                // For film base sampling, use a completely neutral RAW image without any adjustments
+                // This ensures we see the true film base color without previous corrections
+                guard let neutralRAWImage = await loadNeutralRAW(fileURL: fileURL, downsampleWidth: initialDownsampleTarget) else {
+                    print("CoreImageProcessor.processRAWImage Error: Failed to load neutral RAW image for film base sampling.")
+                    return (nil, nil)
+                }
+                try Task.checkCancellation()
+                
+                // Apply only basic rotation and mirroring for film base sampling - show the negative with minimal geometry
+                // This ensures we see the actual film base color without inversion or other processing
+                if let geometryFilter = filterChain.first(where: { $0 is GeometryFilter }) as? GeometryFilter {
+                    // Apply only rotation and mirroring, not crop or other geometry corrections
+                    let filmBaseSamplingImage = geometryFilter.applyGeometry(to: neutralRAWImage, with: adjustments, applyCrop: false)
+                    try Task.checkCancellation()
+                    processedImage = filmBaseSamplingImage
+                    histogram = self.generateHistogram(for: filmBaseSamplingImage)
+                    print("CoreImageProcessor.filmBaseSampling: Applied geometry to neutral RAW image for sampling")
+                } else {
+                    print("CoreImageProcessor.processRAWImage Warning: GeometryFilter not found for .filmBaseSampling mode. Returning neutral RAW image.")
+                    processedImage = neutralRAWImage
+                    histogram = self.generateHistogram(for: neutralRAWImage)
                 }
 
             case .full:
@@ -354,12 +418,46 @@ actor CoreImageProcessor {
             viewPoint: viewTapPoint,
             activeImageFrameInView: activeImageFrameInView,
             imageExtent: imageExtentForSampling
-        ) else { return nil }
+        ) else { 
+            print("sampleColor: Failed to convert view point to image point")
+            return nil 
+        }
+        
+        print("🎯 Color sampling debug:")
+        print("  - View tap point: \(viewTapPoint)")
+        print("  - Image sample point: \(imageSamplePoint)")
+        print("  - Image extent: \(imageExtentForSampling)")
+        print("  - Image color space: \(image.colorSpace?.name ?? "nil" as CFString)")
         
         let pixelRect = CGRect(x: imageSamplePoint.x, y: imageSamplePoint.y, width: 1, height: 1)
-        var bitmap = [UInt8](repeating: 0, count: 4) // RGBA
-        self.context.render(image, toBitmap: &bitmap, rowBytes: 4, bounds: pixelRect, format: .RGBA8, colorSpace: CGColorSpace(name: CGColorSpace.sRGB)!)
-        return (CGFloat(bitmap[0]) / 255.0, CGFloat(bitmap[1]) / 255.0, CGFloat(bitmap[2]) / 255.0, CGFloat(bitmap[3]) / 255.0)
+        
+        // Use Float32 format for better precision and color space information
+        var floatBitmap = [Float32](repeating: 0, count: 4) // RGBA
+        
+        // Use the image's original color space if available, otherwise use linearSRGB
+        let samplingColorSpace = image.colorSpace ?? CGColorSpace(name: CGColorSpace.linearSRGB)!
+        
+        self.context.render(image, 
+                           toBitmap: &floatBitmap, 
+                           rowBytes: 4 * MemoryLayout<Float32>.stride, 
+                           bounds: pixelRect, 
+                           format: .RGBAf, 
+                           colorSpace: samplingColorSpace)
+        
+        let sampledColor = (
+            red: CGFloat(floatBitmap[0]), 
+            green: CGFloat(floatBitmap[1]), 
+            blue: CGFloat(floatBitmap[2]), 
+            alpha: CGFloat(floatBitmap[3])
+        )
+        
+        print("  - Raw sampled values: R:\(sampledColor.red), G:\(sampledColor.green), B:\(sampledColor.blue), A:\(sampledColor.alpha)")
+        print("  - Sampling color space: \(samplingColorSpace.name ?? "unknown" as CFString)")
+        
+        // If the image is in linear color space, the values may be much lower than expected
+        // This is normal and the validation threshold needs to account for this
+        
+        return sampledColor
     }
 
     // MARK: - Original RAW Image Access

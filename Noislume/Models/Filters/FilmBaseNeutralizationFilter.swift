@@ -5,18 +5,23 @@ class FilmBaseNeutralizationFilter: ImageFilter {
     var category: FilterCategory = .filmBase
 
     func apply(to image: CIImage, with adjustments: ImageAdjustments) -> CIImage {
+        print("🎬 FilmBaseNeutralizationFilter.apply() called")
+        print("📊 Input adjustments state:")
+        print("  - filmBaseColorRed: \(adjustments.filmBaseColorRed?.description ?? "nil")")
+        print("  - filmBaseColorGreen: \(adjustments.filmBaseColorGreen?.description ?? "nil")")
+        print("  - filmBaseColorBlue: \(adjustments.filmBaseColorBlue?.description ?? "nil")")
+        print("  - filmBaseSamplePointColor: \(adjustments.filmBaseSamplePointColor?.description ?? "nil")")
+        print("  - reconstructedFilmBaseSamplePointColor: \(adjustments.reconstructedFilmBaseSamplePointColor?.description ?? "nil")")
+        
         // Try to get the film base color either from the transient property or reconstructed from components
         let originalFilmBaseCIColor = adjustments.filmBaseSamplePointColor ?? adjustments.reconstructedFilmBaseSamplePointColor
         
         guard let filmBaseColor = originalFilmBaseCIColor else {
-            print("FilmBaseNeutralizationFilter: No film base color provided, returning image as is.")
-            print("  - filmBaseColorRed: \(adjustments.filmBaseColorRed?.description ?? "nil")")
-            print("  - filmBaseColorGreen: \(adjustments.filmBaseColorGreen?.description ?? "nil")")
-            print("  - filmBaseColorBlue: \(adjustments.filmBaseColorBlue?.description ?? "nil")")
+            print("❌ FilmBaseNeutralizationFilter: No film base color available - returning image unchanged")
             return image
         }
         
-        print("FilmBaseNeutralizationFilter: Applying neutralization with color R:\(filmBaseColor.red), G:\(filmBaseColor.green), B:\(filmBaseColor.blue)")
+        print("🎯 FilmBaseNeutralizationFilter: Applying neutralization with color R:\(filmBaseColor.red), G:\(filmBaseColor.green), B:\(filmBaseColor.blue)")
 
         // Convert the CIColor to CGColor, then to linear sRGB space to get linear components
         let cgFilmBaseColor = CGColor(red: filmBaseColor.red, green: filmBaseColor.green, blue: filmBaseColor.blue, alpha: filmBaseColor.alpha) // CIColor to CGColor
@@ -39,24 +44,38 @@ class FilmBaseNeutralizationFilter: ImageFilter {
         let linearG = components.count > 1 ? components[1] : 0.0
         let linearB = components.count > 2 ? components[2] : 0.0
 
-        // Ensure the components are not zero to avoid division by zero.
-        // If a component is zero or very close to zero, using 1.0 for its reciprocal
-        // effectively means that channel won't be changed by this component, which is safer
-        // than causing an infinity/NaN. A very dark/black film base sample would imply this.
-        let baseR = linearR > 0.0001 ? CGFloat(linearR) : 1.0
-        let baseG = linearG > 0.0001 ? CGFloat(linearG) : 1.0
-        let baseB = linearB > 0.0001 ? CGFloat(linearB) : 1.0
+        // Apply sophisticated safeguards to prevent extreme corrections
+        // Film base colors should be reasonably bright - if too dark, it's likely not true film base
+        let minFilmBaseValue: CGFloat = 0.05 // 5% minimum brightness for realistic film base
+        let maxCorrectionFactor: CGFloat = 10.0 // Maximum 10x correction to prevent extreme results
+        
+        // Clamp film base values to realistic ranges
+        let safeBaseR = max(minFilmBaseValue, min(CGFloat(linearR), 1.0))
+        let safeBaseG = max(minFilmBaseValue, min(CGFloat(linearG), 1.0))
+        let safeBaseB = max(minFilmBaseValue, min(CGFloat(linearB), 1.0))
+        
+        // Calculate correction factors and clamp them to prevent extreme corrections
+        let rawRCorrection = 1.0 / safeBaseR
+        let rawGCorrection = 1.0 / safeBaseG
+        let rawBCorrection = 1.0 / safeBaseB
+        
+        let baseR = min(rawRCorrection, maxCorrectionFactor)
+        let baseG = min(rawGCorrection, maxCorrectionFactor) 
+        let baseB = min(rawBCorrection, maxCorrectionFactor)
+        
+        print("🔧 Film base correction factors:")
+        print("  - Original RGB: (\(linearR), \(linearG), \(linearB))")
+        print("  - Safe RGB: (\(safeBaseR), \(safeBaseG), \(safeBaseB))")
+        print("  - Raw corrections: (\(rawRCorrection), \(rawGCorrection), \(rawBCorrection))")
+        print("  - Final corrections: (\(baseR), \(baseG), \(baseB))")
         
         // We are in linear space. The film base acts as a multiplicative tint.
         // To remove it, we divide the image's R, G, B values by the film base's R, G, B values.
-        // This is equivalent to multiplying by the reciprocal.
-        // R_out = R_in / baseR = R_in * (1/baseR)
-        // G_out = G_in / baseG = G_in * (1/baseG)
-        // B_out = B_in / baseB = B_in * (1/baseB)
-
-        let rVector = CIVector(x: 1.0 / baseR, y: 0, z: 0, w: 0)
-        let gVector = CIVector(x: 0, y: 1.0 / baseG, z: 0, w: 0)
-        let bVector = CIVector(x: 0, y: 0, z: 1.0 / baseB, w: 0)
+        // The baseR, baseG, baseB values are now the final correction factors (already inverted and clamped)
+        
+        let rVector = CIVector(x: baseR, y: 0, z: 0, w: 0)
+        let gVector = CIVector(x: 0, y: baseG, z: 0, w: 0)
+        let bVector = CIVector(x: 0, y: 0, z: baseB, w: 0)
         let aVector = CIVector(x: 0, y: 0, z: 0, w: 1) // Alpha remains unchanged
 
         // The bias vector should be zero for a simple multiplicative adjustment.
@@ -70,6 +89,10 @@ class FilmBaseNeutralizationFilter: ImageFilter {
         colorMatrixFilter.aVector = aVector
         colorMatrixFilter.biasVector = biasVector
         
-        return colorMatrixFilter.outputImage ?? image
+        let result = colorMatrixFilter.outputImage ?? image
+        print("✅ FilmBaseNeutralizationFilter: Applied color matrix transformation successfully")
+        print("📏 Applied correction factors - R: \(baseR), G: \(baseG), B: \(baseB)")
+        
+        return result
     }
 } 

@@ -1,5 +1,11 @@
 # Noislume Project Rules
 
+# ⚠️ CRITICAL: NO AUTO-COMMITS
+- **NEVER commit code without explicit user permission**
+- Always ask before committing changes
+- **IMPORTANT: Read this entire instruction file thoroughly before taking any actions**
+
+# Noislume Project Rules
 ## Framework Management
 - Never suggest installing frameworks via Homebrew or otherwise for end users
 
@@ -44,7 +50,6 @@
 
 ## Version control
 - Unless otherwise specified, use "git add ." to add all changed files, and write a clear and concise commit message (no newlines) for all changes. Write a title summarizing the changes, and you may use bullet points for more description if you feel it is necessary
-- Do not commit code unless explicitly instructed to do so.
 
 # Project Overview & Key Components (Learned by AI Assistant)
 

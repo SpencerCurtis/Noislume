@@ -534,7 +534,7 @@ extension ImageAdjustments {
             return nil
         }
         
-        return CIColor(red: CGFloat(red), green: CGFloat(green), blue: CGFloat(blue))
+        return CIColor(red: CGFloat(red), green: CGFloat(green), blue: CGFloat(blue), colorSpace: CGColorSpace(name: CGColorSpace.sRGB)!)
     }
 }
 
